@@ -1,9 +1,0 @@
-/**
- * skylark-videojs - A version of video.js that ported to running on skylarkjs.
- * @author Hudaokeji Co.,Ltd
- * @version v0.9.0
- * @link www.skylarkjs.org
- * @license MIT
- */
-define(["../../component","./check-volume-support","../../utils/obj","../../utils/fn","./volume-bar"],function(e,o,t,s){"use strict";class i extends e{constructor(e,i={}){i.vertical=i.vertical||!1,(void 0===i.volumeBar||t.isPlain(i.volumeBar))&&(i.volumeBar=i.volumeBar||{},i.volumeBar.vertical=i.vertical),super(e,i),o(this,e),this.throttledHandleMouseMove=s.throttle(s.bind(this,this.handleMouseMove),s.UPDATE_REFRESH_INTERVAL),this.on("mousedown",this.handleMouseDown),this.on("touchstart",this.handleMouseDown),this.on(this.volumeBar,["focus","slideractive"],()=>{this.volumeBar.addClass("vjs-slider-active"),this.addClass("vjs-slider-active"),this.trigger("slideractive")}),this.on(this.volumeBar,["blur","sliderinactive"],()=>{this.volumeBar.removeClass("vjs-slider-active"),this.removeClass("vjs-slider-active"),this.trigger("sliderinactive")})}createEl(){let e="vjs-volume-horizontal";return this.options_.vertical&&(e="vjs-volume-vertical"),super.createEl("div",{className:`vjs-volume-control vjs-control ${e}`})}handleMouseDown(e){const o=this.el_.ownerDocument;this.on(o,"mousemove",this.throttledHandleMouseMove),this.on(o,"touchmove",this.throttledHandleMouseMove),this.on(o,"mouseup",this.handleMouseUp),this.on(o,"touchend",this.handleMouseUp)}handleMouseUp(e){const o=this.el_.ownerDocument;this.off(o,"mousemove",this.throttledHandleMouseMove),this.off(o,"touchmove",this.throttledHandleMouseMove),this.off(o,"mouseup",this.handleMouseUp),this.off(o,"touchend",this.handleMouseUp)}handleMouseMove(e){this.volumeBar.handleMouseMove(e)}}return i.prototype.options_={children:["volumeBar"]},e.registerComponent("VolumeControl",i),i});
-//# sourceMappingURL=../../sourcemaps/control-bar/volume-control/volume-control.js.map
