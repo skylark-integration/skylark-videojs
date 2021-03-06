@@ -14,7 +14,7 @@ define([
                 this.menuButton_ = options.menuButton;
             }
             this.focusedChild_ = -1;
-            this.on('keydown', this.handleKeyDown);
+            this.listenTo('keydown', this.handleKeyDown);
             this.boundHandleBlur_ = Fn.bind(this, this.handleBlur);
             this.boundHandleTapClick_ = Fn.bind(this, this.handleTapClick);
         }
@@ -22,8 +22,8 @@ define([
             if (!(component instanceof Component)) {
                 return;
             }
-            this.on(component, 'blur', this.boundHandleBlur_);
-            this.on(component, [
+            this.listenTo(component, 'blur', this.boundHandleBlur_);
+            this.listenTo(component, [
                 'tap',
                 'click'
             ], this.boundHandleTapClick_);
@@ -32,8 +32,8 @@ define([
             if (!(component instanceof Component)) {
                 return;
             }
-            this.off(component, 'blur', this.boundHandleBlur_);
-            this.off(component, [
+            this.unlistenTo(component, 'blur', this.boundHandleBlur_);
+            this.unlistenTo(component, [
                 'tap',
                 'click'
             ], this.boundHandleTapClick_);

@@ -6,6 +6,11 @@ requirejs.config({
     },
       packages: [
          {
+           name : "skylark-io-diskfs",
+           location : "../node_modules/skylark-io-diskfs/dist/uncompressed/skylark-io-diskfs",
+            main: 'main'
+         },
+         {
            name : "skylark-langx-arrays",
            location : "../node_modules/skylark-langx-arrays/dist/uncompressed/skylark-langx-arrays",
             main: 'main'
@@ -23,6 +28,11 @@ requirejs.config({
          {
            name : "skylark-langx-binary",
            location : "../node_modules/skylark-langx-binary/dist/uncompressed/skylark-langx-binary",
+            main: 'main'
+         },
+         {
+           name : "skylark-langx-constructs",
+           location : "../node_modules/skylark-langx-constructs/dist/uncompressed/skylark-langx-constructs",
             main: 'main'
          },
          {
@@ -209,6 +219,11 @@ requirejs.config({
            name : "skylark-domx-files" ,
            location : "../node_modules/skylark-domx-files/dist/uncompressed/skylark-domx-files",
 //           location : "../../../domx/skylark-domx-files/src",
+            main: 'main'
+         },
+         {
+           name : "skylark-domx" ,
+           location : "../node_modules/skylark-domx/dist/uncompressed/skylark-domx",
             main: 'main'
          },
          {

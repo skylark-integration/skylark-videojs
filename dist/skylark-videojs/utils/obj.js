@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define(function(){"use strict";const t=Object.prototype.toString,n=function(t){return e(t)?Object.keys(t):[]};function c(t,c){n(t).forEach(n=>c(t[n],n))}function e(t){return!!t&&"object"==typeof t}return{each:c,reduce:function(t,c,e=0){return n(t).reduce((n,e)=>c(n,t[e],e),e)},assign:function(t,...n){return Object.assign?Object.assign(t,...n):(n.forEach(n=>{n&&c(n,(n,c)=>{t[c]=n})}),t)},isObject:e,isPlain:function(n){return e(n)&&"[object Object]"===t.call(n)&&n.constructor===Object}}});
+define(["skylark-langx"],function(e){"use strict";return{each:function(i,n){return e.each(i,n,!0)},reduce:e.reduce,assign:e.mixin,isObject:e.isObject,isPlain:e.isPlainObject}});
 //# sourceMappingURL=../sourcemaps/utils/obj.js.map

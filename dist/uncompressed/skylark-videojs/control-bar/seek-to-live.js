@@ -9,7 +9,7 @@ define([
             super(player, options);
             this.updateLiveEdgeStatus();
             if (this.player_.liveTracker) {
-                this.on(this.player_.liveTracker, 'liveedgechange', this.updateLiveEdgeStatus);
+                this.listenTo(this.player_.liveTracker, 'liveedgechange', this.updateLiveEdgeStatus);
             }
         }
         createEl() {
@@ -37,7 +37,7 @@ define([
         }
         dispose() {
             if (this.player_.liveTracker) {
-                this.off(this.player_.liveTracker, 'liveedgechange', this.updateLiveEdgeStatus);
+                this.unlistenTo(this.player_.liveTracker, 'liveedgechange', this.updateLiveEdgeStatus);
             }
             this.textEl_ = null;
             super.dispose();

@@ -184,13 +184,13 @@ define([
             }
             this.scrubbing_ = false;
             this.el_ = this.createEl();
-            evented(this, { eventBusKey: 'el_' });
+            //evented(this, { eventBusKey: 'el_' });
             if (this.fsApi_.requestFullscreen) {
                 Events.on(document, this.fsApi_.fullscreenchange, this.boundDocumentFullscreenChange_);
-                this.on(this.fsApi_.fullscreenchange, this.boundDocumentFullscreenChange_);
+                this.listenTo(this.fsApi_.fullscreenchange, this.boundDocumentFullscreenChange_);
             }
             if (this.fluid_) {
-                this.on([
+                this.listenTo([
                     'playerreset',
                     'resize'
                 ], this.updateStyleEl_);
@@ -236,16 +236,16 @@ define([
             this.addClass(`vjs-v${ majorVersion }`);
             this.userActive(true);
             this.reportUserActivity();
-            this.one('play', this.listenForUserActivity_);
-            this.on('stageclick', this.handleStageClick_);
-            this.on('keydown', this.handleKeyDown);
-            this.on('languagechange', this.handleLanguagechange);
+            this.listenToOnce('play', this.listenForUserActivity_);
+            this.listenTo('stageclick', this.handleStageClick_);
+            this.listenTo('keydown', this.handleKeyDown);
+            this.listenTo('languagechange', this.handleLanguagechange);
             this.breakpoints(this.options_.breakpoints);
             this.responsive(this.options_.responsive);
         }
         dispose() {
             this.trigger('dispose');
-            this.off('dispose');
+            this.unlistenTo('dispose');
             Events.off(document, this.fsApi_.fullscreenchange, this.boundDocumentFullscreenChange_);
             Events.off(document, 'keydown', this.boundFullWindowOnEscKey_);
             if (this.styleEl_ && this.styleEl_.parentNode) {
@@ -407,7 +407,7 @@ define([
             }
             this.fluid_ = !!bool;
             if (evented.isEvented(this)) {
-                this.off([
+                this.unlistenTo([
                     'playerreset',
                     'resize'
                 ], this.updateStyleEl_);
@@ -416,7 +416,7 @@ define([
                 this.addClass('vjs-fluid');
                 this.fill(false);
                 evented.addEventedCallback(this, () => {
-                    this.on([
+                    this.listenTo([
                         'playerreset',
                         'resize'
                     ], this.updateStyleEl_);
@@ -560,10 +560,10 @@ define([
             this.tech_.ready(Fn.bind(this, this.handleTechReady_), true);
             textTrackConverter.jsonToTextTracks(this.textTracksJson_ || [], this.tech_);
             TECH_EVENTS_RETRIGGER.forEach(event => {
-                this.on(this.tech_, event, this[`handleTech${ stringCases.toTitleCase(event) }_`]);
+                this.listenTo(this.tech_, event, this[`handleTech${ stringCases.toTitleCase(event) }_`]);
             });
             Object.keys(TECH_EVENTS_QUEUE).forEach(event => {
-                this.on(this.tech_, event, eventObj => {
+                this.listenTo(this.tech_, event, eventObj => {
                     if (this.tech_.playbackRate() === 0 && this.tech_.seeking()) {
                         this.queuedCallbacks_.push({
                             callback: this[`handleTech${ TECH_EVENTS_QUEUE[event] }_`].bind(this),
@@ -574,24 +574,24 @@ define([
                     this[`handleTech${ TECH_EVENTS_QUEUE[event] }_`](eventObj);
                 });
             });
-            this.on(this.tech_, 'loadstart', this.handleTechLoadStart_);
-            this.on(this.tech_, 'sourceset', this.handleTechSourceset_);
-            this.on(this.tech_, 'waiting', this.handleTechWaiting_);
-            this.on(this.tech_, 'ended', this.handleTechEnded_);
-            this.on(this.tech_, 'seeking', this.handleTechSeeking_);
-            this.on(this.tech_, 'play', this.handleTechPlay_);
-            this.on(this.tech_, 'firstplay', this.handleTechFirstPlay_);
-            this.on(this.tech_, 'pause', this.handleTechPause_);
-            this.on(this.tech_, 'durationchange', this.handleTechDurationChange_);
-            this.on(this.tech_, 'fullscreenchange', this.handleTechFullscreenChange_);
-            this.on(this.tech_, 'fullscreenerror', this.handleTechFullscreenError_);
-            this.on(this.tech_, 'enterpictureinpicture', this.handleTechEnterPictureInPicture_);
-            this.on(this.tech_, 'leavepictureinpicture', this.handleTechLeavePictureInPicture_);
-            this.on(this.tech_, 'error', this.handleTechError_);
-            this.on(this.tech_, 'loadedmetadata', this.updateStyleEl_);
-            this.on(this.tech_, 'posterchange', this.handleTechPosterChange_);
-            this.on(this.tech_, 'textdata', this.handleTechTextData_);
-            this.on(this.tech_, 'ratechange', this.handleTechRateChange_);
+            this.listenTo(this.tech_, 'loadstart', this.handleTechLoadStart_);
+            this.listenTo(this.tech_, 'sourceset', this.handleTechSourceset_);
+            this.listenTo(this.tech_, 'waiting', this.handleTechWaiting_);
+            this.listenTo(this.tech_, 'ended', this.handleTechEnded_);
+            this.listenTo(this.tech_, 'seeking', this.handleTechSeeking_);
+            this.listenTo(this.tech_, 'play', this.handleTechPlay_);
+            this.listenTo(this.tech_, 'firstplay', this.handleTechFirstPlay_);
+            this.listenTo(this.tech_, 'pause', this.handleTechPause_);
+            this.listenTo(this.tech_, 'durationchange', this.handleTechDurationChange_);
+            this.listenTo(this.tech_, 'fullscreenchange', this.handleTechFullscreenChange_);
+            this.listenTo(this.tech_, 'fullscreenerror', this.handleTechFullscreenError_);
+            this.listenTo(this.tech_, 'enterpictureinpicture', this.handleTechEnterPictureInPicture_);
+            this.listenTo(this.tech_, 'leavepictureinpicture', this.handleTechLeavePictureInPicture_);
+            this.listenTo(this.tech_, 'error', this.handleTechError_);
+            this.listenTo(this.tech_, 'loadedmetadata', this.updateStyleEl_);
+            this.listenTo(this.tech_, 'posterchange', this.handleTechPosterChange_);
+            this.listenTo(this.tech_, 'textdata', this.handleTechTextData_);
+            this.listenTo(this.tech_, 'ratechange', this.handleTechRateChange_);
             this.usingNativeControls(this.techGet_('controls'));
             if (this.controls() && !this.usingNativeControls()) {
                 this.addTechControlsListeners_();
@@ -627,20 +627,20 @@ define([
         }
         addTechControlsListeners_() {
             this.removeTechControlsListeners_();
-            this.on(this.tech_, 'mouseup', this.handleTechClick_);
-            this.on(this.tech_, 'dblclick', this.handleTechDoubleClick_);
-            this.on(this.tech_, 'touchstart', this.handleTechTouchStart_);
-            this.on(this.tech_, 'touchmove', this.handleTechTouchMove_);
-            this.on(this.tech_, 'touchend', this.handleTechTouchEnd_);
-            this.on(this.tech_, 'tap', this.handleTechTap_);
+            this.listenTo(this.tech_, 'mouseup', this.handleTechClick_);
+            this.listenTo(this.tech_, 'dblclick', this.handleTechDoubleClick_);
+            this.listenTo(this.tech_, 'touchstart', this.handleTechTouchStart_);
+            this.listenTo(this.tech_, 'touchmove', this.handleTechTouchMove_);
+            this.listenTo(this.tech_, 'touchend', this.handleTechTouchEnd_);
+            this.listenTo(this.tech_, 'tap', this.handleTechTap_);
         }
         removeTechControlsListeners_() {
-            this.off(this.tech_, 'tap', this.handleTechTap_);
-            this.off(this.tech_, 'touchstart', this.handleTechTouchStart_);
-            this.off(this.tech_, 'touchmove', this.handleTechTouchMove_);
-            this.off(this.tech_, 'touchend', this.handleTechTouchEnd_);
-            this.off(this.tech_, 'mouseup', this.handleTechClick_);
-            this.off(this.tech_, 'dblclick', this.handleTechDoubleClick_);
+            this.unlistenTo(this.tech_, 'tap', this.handleTechTap_);
+            this.unlistenTo(this.tech_, 'touchstart', this.handleTechTouchStart_);
+            this.unlistenTo(this.tech_, 'touchmove', this.handleTechTouchMove_);
+            this.unlistenTo(this.tech_, 'touchend', this.handleTechTouchEnd_);
+            this.unlistenTo(this.tech_, 'mouseup', this.handleTechClick_);
+            this.unlistenTo(this.tech_, 'dblclick', this.handleTechDoubleClick_);
         }
         handleTechReady_() {
             this.triggerReady();
@@ -813,10 +813,10 @@ define([
             const timeUpdateListener = () => {
                 if (timeWhenWaiting !== this.currentTime()) {
                     this.removeClass('vjs-waiting');
-                    this.off('timeupdate', timeUpdateListener);
+                    this.unlistenTo('timeupdate', timeUpdateListener);
                 }
             };
-            this.on('timeupdate', timeUpdateListener);
+            this.listenTo('timeupdate', timeUpdateListener);
         }
         handleTechCanPlay_() {
             this.removeClass('vjs-waiting');
@@ -1043,7 +1043,7 @@ define([
             this.playCallbacks_.push(callback);
             const isSrcReady = Boolean(!this.changingSrc_ && (this.src() || this.currentSrc()));
             if (this.waitToPlay_) {
-                this.off([
+                this.unlistenTo([
                     'ready',
                     'loadstart'
                 ], this.waitToPlay_);
@@ -1053,7 +1053,7 @@ define([
                 this.waitToPlay_ = e => {
                     this.play_();
                 };
-                this.one([
+                this.listenToOnce([
                     'ready',
                     'loadstart'
                 ], this.waitToPlay_);
@@ -1112,8 +1112,8 @@ define([
                 }
                 if (!this.isReady_ || this.changingSrc_ || !this.tech_ || !this.tech_.isReady_) {
                     this.cache_.initTime = seconds;
-                    this.off('canplay', this.applyInitTime_);
-                    this.one('canplay', this.applyInitTime_);
+                    this.unlistenTo('canplay', this.applyInitTime_);
+                    this.listenToOnce('canplay', this.applyInitTime_);
                     return;
                 }
                 this.techCall_('setCurrentTime', seconds);
@@ -1732,8 +1732,8 @@ define([
                     'click',
                     'touchstart'
                 ], triggerSuppressedError);
-                this.one('loadstart', function () {
-                    this.off([
+                this.listenToOnce('loadstart', function () {
+                    this.unlistenTo([
                         'click',
                         'touchstart'
                     ], triggerSuppressedError);
@@ -1805,10 +1805,10 @@ define([
                 handleActivity();
                 this.clearInterval(mouseInProgress);
             };
-            this.on('mousedown', handleMouseDown);
-            this.on('mousemove', handleMouseMove);
-            this.on('mouseup', handleMouseUpAndMouseLeave);
-            this.on('mouseleave', handleMouseUpAndMouseLeave);
+            this.listenTo('mousedown', handleMouseDown);
+            this.listenTo('mousemove', handleMouseMove);
+            this.listenTo('mouseup', handleMouseUpAndMouseLeave);
+            this.listenTo('mouseleave', handleMouseUpAndMouseLeave);
             const controlBar = this.getChild('controlBar');
             if (controlBar && !browser.IS_IOS && !browser.IS_ANDROID) {
                 controlBar.on('mouseenter', function (event) {
@@ -1819,8 +1819,8 @@ define([
                     this.player().options_.inactivityTimeout = this.player().cache_.inactivityTimeout;
                 });
             }
-            this.on('keydown', handleActivity);
-            this.on('keyup', handleActivity);
+            this.listenTo('keydown', handleActivity);
+            this.listenTo('keyup', handleActivity);
             let inactivityTimeout;
             this.setInterval(function () {
                 if (!this.userActivity_) {
@@ -1980,10 +1980,10 @@ define([
             }
             this.responsive_ = value;
             if (value) {
-                this.on('playerresize', this.updateCurrentBreakpoint_);
+                this.listenTo('playerresize', this.updateCurrentBreakpoint_);
                 this.updateCurrentBreakpoint_();
             } else {
-                this.off('playerresize', this.updateCurrentBreakpoint_);
+                this.unlistenTo('playerresize', this.updateCurrentBreakpoint_);
                 this.removeCurrentBreakpoint_();
             }
             return value;

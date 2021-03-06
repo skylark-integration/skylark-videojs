@@ -14,9 +14,9 @@ define([
             const options_ = mergeOptions(defaults, options, { createEl: false });
             super(player, options_);
             this.reset_();
-            this.on(this.player_, 'durationchange', this.handleDurationchange);
+            this.listenTo(this.player_, 'durationchange', this.handleDurationchange);
             if (browser.IE_VERSION && 'hidden' in document && 'visibilityState' in document) {
-                this.on(document, 'visibilitychange', this.handleVisibilityChange);
+                this.listenTo(document, 'visibilitychange', this.handleVisibilityChange);
             }
         }
         handleVisibilityChange() {
@@ -69,20 +69,20 @@ define([
             }
             this.trackingInterval_ = this.setInterval(this.trackLive_, Fn.UPDATE_REFRESH_INTERVAL);
             this.trackLive_();
-            this.on(this.player_, [
+            this.listenTo(this.player_, [
                 'play',
                 'pause'
             ], this.trackLive_);
             if (!this.timeupdateSeen_) {
-                this.one(this.player_, 'play', this.handlePlay);
-                this.one(this.player_, 'timeupdate', this.handleFirstTimeupdate);
+                this.listenToOnce(this.player_, 'play', this.handlePlay);
+                this.listenToOnce(this.player_, 'timeupdate', this.handleFirstTimeupdate);
             } else {
-                this.on(this.player_, 'seeked', this.handleSeeked);
+                this.listenTo(this.player_, 'seeked', this.handleSeeked);
             }
         }
         handleFirstTimeupdate() {
             this.timeupdateSeen_ = true;
-            this.on(this.player_, 'seeked', this.handleSeeked);
+            this.listenTo(this.player_, 'seeked', this.handleSeeked);
         }
         handleSeeked() {
             const timeDiff = Math.abs(this.liveCurrentTime() - this.player_.currentTime());
@@ -91,7 +91,7 @@ define([
             this.trackLive_();
         }
         handlePlay() {
-            this.one(this.player_, 'timeupdate', this.seekToLiveEdge);
+            this.listenToOnce(this.player_, 'timeupdate', this.seekToLiveEdge);
         }
         reset_() {
             this.lastTime_ = -1;
@@ -103,14 +103,25 @@ define([
             this.skipNextSeeked_ = false;
             this.clearInterval(this.trackingInterval_);
             this.trackingInterval_ = null;
-            this.off(this.player_, [
+
+            /*
+            this.unlistenTo(this.player_, [
                 'play',
                 'pause'
             ], this.trackLive_);
-            this.off(this.player_, 'seeked', this.handleSeeked);
-            this.off(this.player_, 'play', this.handlePlay);
-            this.off(this.player_, 'timeupdate', this.handleFirstTimeupdate);
-            this.off(this.player_, 'timeupdate', this.seekToLiveEdge);
+            this.unlistenTo(this.player_, 'seeked', this.handleSeeked);
+            this.unlistenTo(this.player_, 'play', this.handlePlay);
+            this.unlistenTo(this.player_, 'timeupdate', this.handleFirstTimeupdate);
+            this.unlistenTo(this.player_, 'timeupdate', this.seekToLiveEdge);
+            */
+            this.unlistenTo(this.player_, [
+                'play',
+                'pause'
+            ], this.trackLive_);
+            this.unlistenTo(this.player_, 'seeked', this.handleSeeked);
+            this.unlistenTo(this.player_, 'play', this.handlePlay);
+            this.unlistenTo(this.player_, 'timeupdate', this.handleFirstTimeupdate);
+            this.unlistenTo(this.player_, 'timeupdate', this.seekToLiveEdge);
         }
         stopTracking() {
             if (!this.isTracking()) {
@@ -176,7 +187,7 @@ define([
             this.player_.currentTime(this.liveCurrentTime());
         }
         dispose() {
-            this.off(document, 'visibilitychange', this.handleVisibilityChange);
+            this.unlistenTo(document, 'visibilitychange', this.handleVisibilityChange);
             this.stopTracking();
             super.dispose();
         }

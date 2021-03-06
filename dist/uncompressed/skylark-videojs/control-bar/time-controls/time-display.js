@@ -9,7 +9,7 @@ define([
     class TimeDisplay extends Component {
         constructor(player, options) {
             super(player, options);
-            this.on(player, [
+            this.listenTo(player, [
                 'timeupdate',
                 'ended'
             ], this.updateContent);

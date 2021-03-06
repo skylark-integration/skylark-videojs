@@ -7,10 +7,10 @@ define([
         constructor(player, options = {}) {
             super(player, options);
             options.replay = options.replay === undefined || options.replay;
-            this.on(player, 'play', this.handlePlay);
-            this.on(player, 'pause', this.handlePause);
+            this.listenTo(player, 'play', this.handlePlay);
+            this.listenTo(player, 'pause', this.handlePause);
             if (options.replay) {
-                this.on(player, 'ended', this.handleEnded);
+                this.listenTo(player, 'ended', this.handleEnded);
             }
         }
         buildCSSClass() {
@@ -46,7 +46,7 @@ define([
             this.removeClass('vjs-playing');
             this.addClass('vjs-ended');
             this.controlText('Replay');
-            this.one(this.player_, 'seeked', this.handleSeeked);
+            this.listenToOnce(this.player_, 'seeked', this.handleSeeked);
         }
     }
     PlayToggle.prototype.controlText_ = 'Play';

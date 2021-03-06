@@ -21,14 +21,14 @@ define([
                 options.volumeControl.vertical = !options.inline;
             }
             super(player, options);
-            this.on(player, ['loadstart'], this.volumePanelState_);
-            this.on(this.muteToggle, 'keyup', this.handleKeyPress);
-            this.on(this.volumeControl, 'keyup', this.handleVolumeControlKeyUp);
-            this.on('keydown', this.handleKeyPress);
-            this.on('mouseover', this.handleMouseOver);
-            this.on('mouseout', this.handleMouseOut);
-            this.on(this.volumeControl, ['slideractive'], this.sliderActive_);
-            this.on(this.volumeControl, ['sliderinactive'], this.sliderInactive_);
+            this.listenTo(player, ['loadstart'], this.volumePanelState_);
+            this.listenTo(this.muteToggle, 'keyup', this.handleKeyPress);
+            this.listenTo(this.volumeControl, 'keyup', this.handleVolumeControlKeyUp);
+            this.listenTo('keydown', this.handleKeyPress);
+            this.listenTo('mouseover', this.handleMouseOver);
+            this.listenTo('mouseout', this.handleMouseOut);
+            this.listenTo(this.volumeControl, ['slideractive'], this.sliderActive_);
+            this.listenTo(this.volumeControl, ['sliderinactive'], this.sliderInactive_);
         }
         sliderActive_() {
             this.addClass('vjs-slider-active');

@@ -61,11 +61,11 @@ define([
                 if (typeof this.tabIndex_ !== 'undefined') {
                     this.el_.setAttribute('tabIndex', this.tabIndex_);
                 }
-                this.on([
+                this.listenTo([
                     'tap',
                     'click'
                 ], this.handleClick);
-                this.on('keydown', this.handleKeyDown);
+                this.listenTo('keydown', this.handleKeyDown);
             }
         }
         disable() {
@@ -75,13 +75,13 @@ define([
             if (typeof this.tabIndex_ !== 'undefined') {
                 this.el_.removeAttribute('tabIndex');
             }
-            this.off('mouseover', this.handleMouseOver);
-            this.off('mouseout', this.handleMouseOut);
-            this.off([
+            this.unlistenTo('mouseover', this.handleMouseOver);
+            this.unlistenTo('mouseout', this.handleMouseOut);
+            this.unlistenTo([
                 'tap',
                 'click'
             ], this.handleClick);
-            this.off('keydown', this.handleKeyDown);
+            this.unlistenTo('keydown', this.handleKeyDown);
         }
         handleLanguagechange() {
             this.controlText(this.controlText_);

@@ -16,9 +16,9 @@ define([
             super(player, options);
             checkVolumeSupport(this, player);
             this.throttledHandleMouseMove = Fn.throttle(Fn.bind(this, this.handleMouseMove), Fn.UPDATE_REFRESH_INTERVAL);
-            this.on('mousedown', this.handleMouseDown);
-            this.on('touchstart', this.handleMouseDown);
-            this.on(this.volumeBar, [
+            this.listenTo('mousedown', this.handleMouseDown);
+            this.listenTo('touchstart', this.handleMouseDown);
+            this.listenTo(this.volumeBar, [
                 'focus',
                 'slideractive'
             ], () => {
@@ -26,7 +26,7 @@ define([
                 this.addClass('vjs-slider-active');
                 this.trigger('slideractive');
             });
-            this.on(this.volumeBar, [
+            this.listenTo(this.volumeBar, [
                 'blur',
                 'sliderinactive'
             ], () => {
@@ -44,17 +44,17 @@ define([
         }
         handleMouseDown(event) {
             const doc = this.el_.ownerDocument;
-            this.on(doc, 'mousemove', this.throttledHandleMouseMove);
-            this.on(doc, 'touchmove', this.throttledHandleMouseMove);
-            this.on(doc, 'mouseup', this.handleMouseUp);
-            this.on(doc, 'touchend', this.handleMouseUp);
+            this.listenTo(doc, 'mousemove', this.throttledHandleMouseMove);
+            this.listenTo(doc, 'touchmove', this.throttledHandleMouseMove);
+            this.listenTo(doc, 'mouseup', this.handleMouseUp);
+            this.listenTo(doc, 'touchend', this.handleMouseUp);
         }
         handleMouseUp(event) {
             const doc = this.el_.ownerDocument;
-            this.off(doc, 'mousemove', this.throttledHandleMouseMove);
-            this.off(doc, 'touchmove', this.throttledHandleMouseMove);
-            this.off(doc, 'mouseup', this.handleMouseUp);
-            this.off(doc, 'touchend', this.handleMouseUp);
+            this.unlistenTo(doc, 'mousemove', this.throttledHandleMouseMove);
+            this.unlistenTo(doc, 'touchmove', this.throttledHandleMouseMove);
+            this.unlistenTo(doc, 'mouseup', this.handleMouseUp);
+            this.unlistenTo(doc, 'touchend', this.handleMouseUp);
         }
         handleMouseMove(event) {
             this.volumeBar.handleMouseMove(event);

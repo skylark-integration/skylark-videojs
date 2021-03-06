@@ -21,13 +21,13 @@ define([
             if (this.enabled()) {
                 return;
             }
-            this.on('mousedown', this.handleMouseDown);
-            this.on('touchstart', this.handleMouseDown);
-            this.on('keydown', this.handleKeyDown);
-            this.on('click', this.handleClick);
-            this.on(this.player_, 'controlsvisible', this.update);
+            this.listenTo('mousedown', this.handleMouseDown);
+            this.listenTo('touchstart', this.handleMouseDown);
+            this.listenTo('keydown', this.handleKeyDown);
+            this.listenTo('click', this.handleClick);
+            this.listenTo(this.player_, 'controlsvisible', this.update);
             if (this.playerEvent) {
-                this.on(this.player_, this.playerEvent, this.update);
+                this.listenTo(this.player_, this.playerEvent, this.update);
             }
             this.removeClass('disabled');
             this.setAttribute('tabindex', 0);
@@ -38,19 +38,19 @@ define([
                 return;
             }
             const doc = this.bar.el_.ownerDocument;
-            this.off('mousedown', this.handleMouseDown);
-            this.off('touchstart', this.handleMouseDown);
-            this.off('keydown', this.handleKeyDown);
-            this.off('click', this.handleClick);
-            this.off(this.player_, 'controlsvisible', this.update);
-            this.off(doc, 'mousemove', this.handleMouseMove);
-            this.off(doc, 'mouseup', this.handleMouseUp);
-            this.off(doc, 'touchmove', this.handleMouseMove);
-            this.off(doc, 'touchend', this.handleMouseUp);
+            this.unlistenTo('mousedown', this.handleMouseDown);
+            this.unlistenTo('touchstart', this.handleMouseDown);
+            this.unlistenTo('keydown', this.handleKeyDown);
+            this.unlistenTo('click', this.handleClick);
+            this.unlistenTo(this.player_, 'controlsvisible', this.update);
+            this.unlistenTo(doc, 'mousemove', this.handleMouseMove);
+            this.unlistenTo(doc, 'mouseup', this.handleMouseUp);
+            this.unlistenTo(doc, 'touchmove', this.handleMouseMove);
+            this.unlistenTo(doc, 'touchend', this.handleMouseUp);
             this.removeAttribute('tabindex');
             this.addClass('disabled');
             if (this.playerEvent) {
-                this.off(this.player_, this.playerEvent, this.update);
+                this.unlistenTo(this.player_, this.playerEvent, this.update);
             }
             this.enabled_ = false;
         }
@@ -77,10 +77,10 @@ define([
             Dom.blockTextSelection();
             this.addClass('vjs-sliding');
             this.trigger('slideractive');
-            this.on(doc, 'mousemove', this.handleMouseMove);
-            this.on(doc, 'mouseup', this.handleMouseUp);
-            this.on(doc, 'touchmove', this.handleMouseMove);
-            this.on(doc, 'touchend', this.handleMouseUp);
+            this.listenTo(doc, 'mousemove', this.handleMouseMove);
+            this.listenTo(doc, 'mouseup', this.handleMouseUp);
+            this.listenTo(doc, 'touchmove', this.handleMouseMove);
+            this.listenTo(doc, 'touchend', this.handleMouseUp);
             this.handleMouseMove(event);
         }
         handleMouseMove(event) {
@@ -90,10 +90,10 @@ define([
             Dom.unblockTextSelection();
             this.removeClass('vjs-sliding');
             this.trigger('sliderinactive');
-            this.off(doc, 'mousemove', this.handleMouseMove);
-            this.off(doc, 'mouseup', this.handleMouseUp);
-            this.off(doc, 'touchmove', this.handleMouseMove);
-            this.off(doc, 'touchend', this.handleMouseUp);
+            this.unlistenTo(doc, 'mousemove', this.handleMouseMove);
+            this.unlistenTo(doc, 'mouseup', this.handleMouseUp);
+            this.unlistenTo(doc, 'touchmove', this.handleMouseMove);
+            this.unlistenTo(doc, 'touchend', this.handleMouseUp);
             this.update();
         }
         update() {

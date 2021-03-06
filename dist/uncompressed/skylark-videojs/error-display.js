@@ -6,7 +6,7 @@ define([
     class ErrorDisplay extends ModalDialog {
         constructor(player, options) {
             super(player, options);
-            this.on(player, 'error', this.open);
+            this.listenTo(player, 'error', this.open);
         }
         buildCSSClass() {
             return `vjs-error-display ${ super.buildCSSClass() }`;

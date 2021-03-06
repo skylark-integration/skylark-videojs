@@ -4,7 +4,7 @@ define(function () {
         if (player.tech_ && !player.tech_.featuresMuteControl) {
             self.addClass('vjs-hidden');
         }
-        self.on(player, 'loadstart', function () {
+        self.listenTo(player, 'loadstart', function () {
             if (!player.tech_.featuresMuteControl) {
                 self.addClass('vjs-hidden');
             } else {

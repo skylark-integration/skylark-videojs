@@ -265,16 +265,16 @@ define([
             if (options.persistTextTrackSettings === undefined) {
                 this.options_.persistTextTrackSettings = this.options_.playerOptions.persistTextTrackSettings;
             }
-            this.on(this.$('.vjs-done-button'), 'click', () => {
+            this.listenTo(this.$('.vjs-done-button'), 'click', () => {
                 this.saveSettings();
                 this.close();
             });
-            this.on(this.$('.vjs-default-button'), 'click', () => {
+            this.listenTo(this.$('.vjs-default-button'), 'click', () => {
                 this.setDefaults();
                 this.updateDisplay();
             });
             Obj.each(selectConfigs, config => {
-                this.on(this.$(config.selector), 'change', this.updateDisplay);
+                this.listenTo(this.$(config.selector), 'change', this.updateDisplay);
             });
             if (this.options_.persistTextTrackSettings) {
                 this.restoreSettings();

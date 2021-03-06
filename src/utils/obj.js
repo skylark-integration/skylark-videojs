@@ -1,5 +1,9 @@
-define(function () {
+define([
+    "skylark-langx"
+],function (langx) {
     'use strict';
+
+    /*
     const toString = Object.prototype.toString;
     const keys = function (object) {
         return isObject(object) ? Object.keys(object) : [];
@@ -30,11 +34,15 @@ define(function () {
     function isPlain(value) {
         return isObject(value) && toString.call(value) === '[object Object]' && value.constructor === Object;
     }
+
+    */
     return {
-        each: each,
-        reduce: reduce,
-        assign: assign,
-        isObject: isObject,
-        isPlain: isPlain
+        each : function(object,fn) {
+            return langx.each(object,fn,true/*isForEach*/);
+        },
+        reduce: langx.reduce,
+        assign: langx.mixin,
+        isObject: langx.isObject,
+        isPlain: langx.isPlainObject
     };
 });

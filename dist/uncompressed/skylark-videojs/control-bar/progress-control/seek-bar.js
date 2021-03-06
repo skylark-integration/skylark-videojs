@@ -23,23 +23,23 @@ define([
         setEventHandlers_() {
             this.update_ = Fn.bind(this, this.update);
             this.update = Fn.throttle(this.update_, Fn.UPDATE_REFRESH_INTERVAL);
-            this.on(this.player_, [
+            this.listenTo(this.player_, [
                 'ended',
                 'durationchange',
                 'timeupdate'
             ], this.update);
             if (this.player_.liveTracker) {
-                this.on(this.player_.liveTracker, 'liveedgechange', this.update);
+                this.listenTo(this.player_.liveTracker, 'liveedgechange', this.update);
             }
             this.updateInterval = null;
-            this.on(this.player_, ['playing'], this.enableInterval_);
-            this.on(this.player_, [
+            this.listenTo(this.player_, ['playing'], this.enableInterval_);
+            this.listenTo(this.player_, [
                 'ended',
                 'pause',
                 'waiting'
             ], this.disableInterval_);
             if ('hidden' in document && 'visibilityState' in document) {
-                this.on(document, 'visibilitychange', this.toggleVisibility_);
+                this.listenTo(document, 'visibilitychange', this.toggleVisibility_);
             }
         }
         toggleVisibility_(e) {
@@ -233,22 +233,22 @@ define([
         }
         dispose() {
             this.disableInterval_();
-            this.off(this.player_, [
+            thisunlistenTo(this.player_, [
                 'ended',
                 'durationchange',
                 'timeupdate'
             ], this.update);
             if (this.player_.liveTracker) {
-                this.on(this.player_.liveTracker, 'liveedgechange', this.update);
+                this.listenTo(this.player_.liveTracker, 'liveedgechange', this.update);
             }
-            this.off(this.player_, ['playing'], this.enableInterval_);
-            this.off(this.player_, [
+            this.unlistenTo(this.player_, ['playing'], this.enableInterval_);
+            this.unlistenTo(this.player_, [
                 'ended',
                 'pause',
                 'waiting'
             ], this.disableInterval_);
             if ('hidden' in document && 'visibilityState' in document) {
-                this.off(document, 'visibilitychange', this.toggleVisibility_);
+                this.unlistenTo(document, 'visibilitychange', this.toggleVisibility_);
             }
             super.dispose();
         }

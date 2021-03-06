@@ -63,7 +63,7 @@ define([
                 if (this.options_.pauseOnOpen && this.wasPlaying_) {
                     player.pause();
                 }
-                this.on('keydown', this.handleKeyDown);
+                this.listenTo('keydown', this.handleKeyDown);
                 this.hadControls_ = player.controls();
                 player.controls(false);
                 this.show();
@@ -89,7 +89,7 @@ define([
             if (this.wasPlaying_ && this.options_.pauseOnOpen) {
                 player.play();
             }
-            this.off('keydown', this.handleKeyDown);
+            this.unlistenTo('keydown', this.handleKeyDown);
             if (this.hadControls_) {
                 player.controls(true);
             }
@@ -110,10 +110,10 @@ define([
                     this.contentEl_ = this.el_;
                     close = this.addChild('closeButton', { controlText: 'Close Modal Dialog' });
                     this.contentEl_ = temp;
-                    this.on(close, 'close', this.close);
+                    this.listenTo(close, 'close', this.close);
                 }
                 if (!closeable && close) {
-                    this.off(close, 'close', this.close);
+                    this.unlistenTo(close, 'close', this.close);
                     this.removeChild(close);
                     close.dispose();
                 }

@@ -594,8 +594,12 @@ define('skylark-videojs/utils/log',['./create-logger'], function (createLogger) 
     log.createLogger = createLogger;
     return log;
 });
-define('skylark-videojs/utils/obj',[],function () {
+define('skylark-videojs/utils/obj',[
+    "skylark-langx"
+],function (langx) {
     'use strict';
+
+    /*
     const toString = Object.prototype.toString;
     const keys = function (object) {
         return isObject(object) ? Object.keys(object) : [];
@@ -626,12 +630,16 @@ define('skylark-videojs/utils/obj',[],function () {
     function isPlain(value) {
         return isObject(value) && toString.call(value) === '[object Object]' && value.constructor === Object;
     }
+
+    */
     return {
-        each: each,
-        reduce: reduce,
-        assign: assign,
-        isObject: isObject,
-        isPlain: isPlain
+        each : function(object,fn) {
+            return langx.each(object,fn,true/*isForEach*/);
+        },
+        reduce: langx.reduce,
+        assign: langx.mixin,
+        isObject: langx.isObject,
+        isPlain: langx.isPlainObject
     };
 });
 define('skylark-videojs/utils/computed-style',[
@@ -737,12 +745,13 @@ define('skylark-videojs/utils/browser',[
 define('skylark-videojs/utils/dom',[
     "skylark-langx-globals/window",
     "skylark-langx-globals/document",   
+    "skylark-domx",
     '../fullscreen-api',
     './log',
     './obj',
     './computed-style',
     './browser'
-], function (window,document,fs, log, obj, computedStyle, browser) {
+], function (window,document,domx,fs, log, obj, computedStyle, browser) {
     'use strict';
     function isNonBlankString(str) {
         return typeof str === 'string' && Boolean(str.trim());
@@ -1045,33 +1054,51 @@ define('skylark-videojs/utils/dom',[
     const $$ = createQuerier('querySelectorAll');
     return {
         isReal: browser.isReal,
-        isEl: isEl,
-        isInFrame: isInFrame,
-        createEl: createEl,
-        textContent: textContent,
-        prependTo: prependTo,
-        hasClass: hasClass,
-        addClass: addClass,
-        removeClass: removeClass,
-        toggleClass: toggleClass,
-        setAttributes: setAttributes,
+        isEl: domx.noder.isElement,// isEl,
+        isInFrame: domx.noder.isInFrame, //isInFrame,
+        createEl:  function (tagName = 'div', properties = {}, attributes = {}, content) { //createEl,
+            var el  = domx.noder.createElement(tagName,properties,attributes);
+            if (content) {
+                domx.noder.append(el,content)
+            }
+            return el;
+        }, 
+        textContent: domx.data.text, //textContent,
+        prependTo: function (child, parent) { //prependTo,
+            domx.noder.prepend(parent,child);
+        },
+        hasClass: domx.styler.hasClass, //hasClass,
+        addClass: domx.styler.addClass,  //addClass,
+        removeClass: domx.styler.removeClass, //removeClass,
+        toggleClass: domx.styler.toogleClass, //toggleClass,
+        setAttributes: domx.data.attr, // setAttributes,
         getAttributes: getAttributes,
-        getAttribute: getAttribute,
-        setAttribute: setAttribute,
-        removeAttribute: removeAttribute,
+        getAttribute: domx.data.attr, //getAttribute,
+        setAttribute: domx.data.attr, //setAttribute,
+        removeAttribute: domx.data.removeAttr, //removeAttribute,
         blockTextSelection: blockTextSelection,
         unblockTextSelection: unblockTextSelection,
         getBoundingClientRect: getBoundingClientRect,
-        findPosition: findPosition,
+        findPosition: domx.geom.pageRect, //findPosition,
         getPointerPosition: getPointerPosition,
-        isTextNode: isTextNode,
-        emptyEl: emptyEl,
+        isTextNode: domx.noder.isTextNode,// isTextNode,
+        emptyEl: domx.noder.empty, //emptyEl,
         normalizeContent: normalizeContent,
-        appendContent: appendContent,
-        insertContent: insertContent,
+        appendContent: domx.noder.append,//appendContent,
+        insertContent: function(el,content) { //insertContent,
+            domx.noder.empty(el);
+            domx.noder.append(el,content);
+            return el;
+        },
         isSingleLeftClick: isSingleLeftClick,
-        $: $,
-        $$: $$
+        $: function(selector,context) {
+            context = context || document;
+            return domx.finder.find(context,selector);
+        },
+        $$: function(selector,context) {
+            context = context || document;
+            return domx.finder.findAll(context,selector);
+        }
     };
 });
 define('skylark-videojs/setup',[
@@ -1215,10 +1242,11 @@ define('skylark-videojs/utils/dom-data',[
 });
 define('skylark-videojs/utils/events',[
     'skylark-langx-globals/document',
+    "skylark-domx",
     './dom-data',
     './guid',
     './log'
-], function (document, DomData, Guid, log) {
+], function (document, domx, DomData, Guid, log) {
     'use strict';
     function _cleanUpEvents(elem, type) {
         if (!DomData.has(elem)) {
@@ -1481,11 +1509,11 @@ define('skylark-videojs/utils/events',[
     }
     return {
         fixEvent: fixEvent,
-        on: on,
-        off: off,
-        trigger: trigger,
-        one: one,
-        any: any
+        on: domx.eventer.on, //on,
+        off: domx.eventer.off, //off,
+        trigger: domx.eventer.trigger, //trigger,
+        one: domx.eventer.one, //one,
+        any: domx.eventer.one //any
     };
 });
 define('skylark-videojs/utils/fn',[
@@ -1545,9 +1573,12 @@ define('skylark-videojs/utils/fn',[
     };
 });
 define('skylark-videojs/event-target',[
+    "skylark-langx-events/Emitter",
     './utils/events'
-], function (Events) {
+], function (Emitter,Events) {
     'use strict';
+
+    /*
     const EventTarget = function () {
     };
     EventTarget.prototype.allowedEvents_ = {};
@@ -1589,6 +1620,15 @@ define('skylark-videojs/event-target',[
         Events.trigger(this, event);
     };
     EventTarget.prototype.dispatchEvent = EventTarget.prototype.trigger;
+
+    */
+
+    var EventTarget = Emitter.inherit({});
+    EventTarget.prototype.addEventListener = EventTarget.prototype.on;
+    EventTarget.prototype.dispatchEvent = EventTarget.prototype.trigger;
+    EventTarget.prototype.removeEventListener = EventTarget.prototype.off;
+    EventTarget.prototype.any = EventTarget.prototype.one;
+
     let EVENT_MAP;
     EventTarget.prototype.queueTrigger = function (event) {
         if (!EVENT_MAP) {
@@ -1612,6 +1652,7 @@ define('skylark-videojs/event-target',[
         }, 0);
         map.set(type, timeout);
     };
+
     return EventTarget;
 });
 define('skylark-videojs/mixins/evented',[
@@ -1708,9 +1749,9 @@ define('skylark-videojs/mixins/evented',[
             const {isTargetingSelf, target, type, listener} = normalizeListenArgs(this, args, 'on');
             listen(target, 'on', type, listener);
             if (!isTargetingSelf) {
-                const removeListenerOnDispose = () => this.off(target, type, listener);
+                const removeListenerOnDispose = () => this.unlistenTo(target, type, listener);
                 removeListenerOnDispose.guid = listener.guid;
-                const removeRemoverOnTargetDispose = () => this.off('dispose', removeListenerOnDispose);
+                const removeRemoverOnTargetDispose = () => this.unlistenTo('dispose', removeListenerOnDispose);
                 removeRemoverOnTargetDispose.guid = listener.guid;
                 listen(this, 'on', 'dispose', removeListenerOnDispose);
                 listen(target, 'on', 'dispose', removeRemoverOnTargetDispose);
@@ -1722,7 +1763,7 @@ define('skylark-videojs/mixins/evented',[
                 listen(target, 'one', type, listener);
             } else {
                 const wrapper = (...largs) => {
-                    this.off(target, type, wrapper);
+                    this.unlistenTo(target, type, wrapper);
                     listener.apply(null, largs);
                 };
                 wrapper.guid = listener.guid;
@@ -1735,7 +1776,7 @@ define('skylark-videojs/mixins/evented',[
                 listen(target, 'any', type, listener);
             } else {
                 const wrapper = (...largs) => {
-                    this.off(target, type, wrapper);
+                    this.unlistenTo(target, type, wrapper);
                     listener.apply(null, largs);
                 };
                 wrapper.guid = listener.guid;
@@ -1752,7 +1793,7 @@ define('skylark-videojs/mixins/evented',[
                 validateEventType(type, this, 'off');
                 validateListener(listener, this, 'off');
                 listener = Fn.bind(this, listener);
-                this.off('dispose', listener);
+                this.unlistenTo('dispose', listener);
                 if (target.nodeName) {
                     Events.off(target, type, listener);
                     Events.off(target, 'dispose', listener);
@@ -1947,6 +1988,9 @@ define('skylark-videojs/utils/set',[], function () {
     return window.Set ? window.Set : SetSham;
 });
 define('skylark-videojs/component',[
+    "skylark-langx",
+    "skylark-domx-eventer",
+    "skylark-widgets-base/Widget",
     './mixins/evented',
     './mixins/stateful',
     './utils/dom',
@@ -1958,10 +2002,78 @@ define('skylark-videojs/component',[
     './utils/computed-style',
     './utils/map',
     './utils/set'
-], function (evented, stateful, Dom, DomData, Fn, Guid, stringCases, mergeOptions, computedStyle, Map, Set) {
+], function (langx,eventer,Widget,evented, stateful, Dom, DomData, Fn, Guid, stringCases, mergeOptions, computedStyle, Map, Set) {
     'use strict';
-    class Component {
-        constructor(player, options, ready) {
+    class Component extends Widget {
+        on(events, selector, data, callback, ctx, /*used internally*/ one) {
+            if (this.el_ && eventer.isNativeEvent(events)) {
+                eventer.on(this.el_,events,selector,data,callback,ctx,one);
+            } else {
+                super.on(events, selector, data, callback, ctx,  one);
+            }
+        }   
+
+        off(events, callback) {
+            if (this.el_ && eventer.isNativeEvent(events)) {
+                eventer.off(this.el_,events,callback);
+            } else {
+                super.off(events,callback);
+            }
+        }
+
+        listenTo (obj, event, callback, /*used internally*/ one) {
+            if (langx.isString(obj) || langx.isArray(obj)) {
+                one = callback;
+                callback = event;
+                event = obj;
+                if (this.el_ && eventer.isNativeEvent(event)) {
+                    eventer.on(this.el_,event,callback,this,one);
+                } else {
+                    this.on(event,callback,this,one);
+                }
+            } else {
+                if (obj.nodeType) {
+                    eventer.on(obj,event,callback,this,one)
+                } else {
+                    super.listenTo(obj,event,callback,one)
+                }                
+            }
+        }
+
+        unlistenTo(obj, event, callback) {
+            if (langx.isString(obj) || langx.isArray(obj)) {
+                callback = event;
+                event = obj;
+                if (this.el_ && eventer.isNativeEvent(event)) {
+                    eventer.off(this.el_,event,callback);
+                } else {
+                    this.off(event,callback);                   
+                }
+            } else {
+                if (obj.nodeType) {
+                    eventer.off(obj,event,callback)
+                } else {
+                    super.unlistenTo(obj,event,callback)
+                }
+            }
+        }
+
+        _create() {
+
+        }
+
+
+        _construct(player, options, ready) {
+            /*
+            var el;
+            if (options.el) {
+               el = options.el;
+            } else if (options.createEl !== false) {
+                el = this.createEl();
+            }
+            super(el);
+            */
+
             if (!player && this.play) {
                 this.player_ = player = this;
             } else {
@@ -1978,15 +2090,20 @@ define('skylark-videojs/component',[
             }
             this.name_ = options.name || null;
             if (options.el) {
-                this.el_ = options.el;
+               this.el_ = options.el;
             } else if (options.createEl !== false) {
                 this.el_ = this.createEl();
             }
+            //this.el_ = this._elm;
+
             if (options.evented !== false) {
-                evented(this, { eventBusKey: this.el_ ? 'el_' : null });
+                ///evented(this, { eventBusKey: this.el_ ? 'el_' : null });
                 this.handleLanguagechange = this.handleLanguagechange.bind(this);
-                this.on(this.player_, 'languagechange', this.handleLanguagechange);
+                ///this.listenTo(this.player_, 'languagechange', this.handleLanguagechange);
+                this.listenTo(this.player_, 'languagechange', this.handleLanguagechange);
             }
+
+
             stateful(this, this.constructor.defaultState);
             this.children_ = [];
             this.childIndex_ = {};
@@ -2031,9 +2148,10 @@ define('skylark-videojs/component',[
                 if (this.el_.parentNode) {
                     this.el_.parentNode.removeChild(this.el_);
                 }
-                if (DomData.has(this.el_)) {
-                    DomData.delete(this.el_);
-                }
+                ///if (DomData.has(this.el_)) {
+                ///    DomData.delete(this.el_);
+                ///}
+                eventer.clear(this.el_);
                 this.el_ = null;
             }
             this.player_ = null;
@@ -2395,7 +2513,7 @@ define('skylark-videojs/component',[
             const tapMovementThreshold = 10;
             const touchTimeThreshold = 200;
             let couldBeTap;
-            this.on('touchstart', function (event) {
+            this.listenTo('touchstart', function (event) {
                 if (event.touches.length === 1) {
                     firstTouch = {
                         pageX: event.touches[0].pageX,
@@ -2405,7 +2523,7 @@ define('skylark-videojs/component',[
                     couldBeTap = true;
                 }
             });
-            this.on('touchmove', function (event) {
+            this.listenTo('touchmove', function (event) {
                 if (event.touches.length > 1) {
                     couldBeTap = false;
                 } else if (firstTouch) {
@@ -2420,9 +2538,9 @@ define('skylark-videojs/component',[
             const noTap = function () {
                 couldBeTap = false;
             };
-            this.on('touchleave', noTap);
-            this.on('touchcancel', noTap);
-            this.on('touchend', function (event) {
+            this.listenTo('touchleave', noTap);
+            this.listenTo('touchcancel', noTap);
+            this.listenTo('touchend', function (event) {
                 firstTouch = null;
                 if (couldBeTap === true) {
                     const touchTime = window.performance.now() - touchStart;
@@ -2439,7 +2557,7 @@ define('skylark-videojs/component',[
             }
             const report = Fn.bind(this.player(), this.player().reportUserActivity);
             let touchHolding;
-            this.on('touchstart', function () {
+            this.listenTo('touchstart', function () {
                 report();
                 this.clearInterval(touchHolding);
                 touchHolding = this.setInterval(report, 250);
@@ -2448,9 +2566,9 @@ define('skylark-videojs/component',[
                 report();
                 this.clearInterval(touchHolding);
             };
-            this.on('touchmove', report);
-            this.on('touchend', touchEnd);
-            this.on('touchcancel', touchEnd);
+            this.listenTo('touchmove', report);
+            this.listenTo('touchend', touchEnd);
+            this.listenTo('touchcancel', touchEnd);
         }
         setTimeout(fn, timeout) {
             var timeoutId, disposeFn;
@@ -2539,7 +2657,7 @@ define('skylark-videojs/component',[
                 return;
             }
             this.clearingTimersOnDispose_ = true;
-            this.one('dispose', () => {
+            this.listenToOnce('dispose', () => {
                 [
                     [
                         'namedRafs_',
@@ -3055,7 +3173,7 @@ define('skylark-videojs/modal-dialog',[
                 if (this.options_.pauseOnOpen && this.wasPlaying_) {
                     player.pause();
                 }
-                this.on('keydown', this.handleKeyDown);
+                this.listenTo('keydown', this.handleKeyDown);
                 this.hadControls_ = player.controls();
                 player.controls(false);
                 this.show();
@@ -3081,7 +3199,7 @@ define('skylark-videojs/modal-dialog',[
             if (this.wasPlaying_ && this.options_.pauseOnOpen) {
                 player.play();
             }
-            this.off('keydown', this.handleKeyDown);
+            this.unlistenTo('keydown', this.handleKeyDown);
             if (this.hadControls_) {
                 player.controls(true);
             }
@@ -3102,10 +3220,10 @@ define('skylark-videojs/modal-dialog',[
                     this.contentEl_ = this.el_;
                     close = this.addChild('closeButton', { controlText: 'Close Modal Dialog' });
                     this.contentEl_ = temp;
-                    this.on(close, 'close', this.close);
+                    this.listenTo(close, 'close', this.close);
                 }
                 if (!closeable && close) {
-                    this.off(close, 'close', this.close);
+                    this.unlistenTo(close, 'close', this.close);
                     this.removeChild(close);
                     close.dispose();
                 }
@@ -4421,10 +4539,10 @@ define('skylark-videojs/tech/tech',[
             options.reportTouchActivity = false;
             super(null, options, ready);
             this.hasStarted_ = false;
-            this.on('playing', function () {
+            this.listenTo('playing', function () {
                 this.hasStarted_ = true;
             });
-            this.on('loadstart', function () {
+            this.listenTo('loadstart', function () {
                 this.hasStarted_ = false;
             });
             TRACK_TYPES.ALL.names.forEach(name => {
@@ -4468,7 +4586,7 @@ define('skylark-videojs/tech/tech',[
         }
         triggerSourceset(src) {
             if (!this.isReady_) {
-                this.one('ready', () => this.setTimeout(() => this.triggerSourceset(src), 1));
+                this.listenToOnce('ready', () => this.setTimeout(() => this.triggerSourceset(src), 1));
             }
             this.trigger({
                 src,
@@ -4476,14 +4594,14 @@ define('skylark-videojs/tech/tech',[
             });
         }
         manualProgressOn() {
-            this.on('durationchange', this.onDurationChange);
+            this.listenTo('durationchange', this.listenToDurationChange);
             this.manualProgress = true;
-            this.one('ready', this.trackProgress);
+            this.listenToOnce('ready', this.trackProgress);
         }
         manualProgressOff() {
             this.manualProgress = false;
             this.stopTrackingProgress();
-            this.off('durationchange', this.onDurationChange);
+            this.unlistenTo('durationchange', this.listenToDurationChange);
         }
         trackProgress(event) {
             this.stopTrackingProgress();
@@ -4512,14 +4630,14 @@ define('skylark-videojs/tech/tech',[
         }
         manualTimeUpdatesOn() {
             this.manualTimeUpdates = true;
-            this.on('play', this.trackCurrentTime);
-            this.on('pause', this.stopTrackingCurrentTime);
+            this.listenTo('play', this.trackCurrentTime);
+            this.listenTo('pause', this.stopTrackingCurrentTime);
         }
         manualTimeUpdatesOff() {
             this.manualTimeUpdates = false;
             this.stopTrackingCurrentTime();
-            this.off('play', this.trackCurrentTime);
-            this.off('pause', this.stopTrackingCurrentTime);
+            this.unlistenTo('play', this.trackCurrentTime);
+            this.unlistenTo('pause', this.stopTrackingCurrentTime);
         }
         trackCurrentTime() {
             if (this.currentTimeInterval) {
@@ -4616,7 +4734,7 @@ define('skylark-videojs/tech/tech',[
                 const tracks = this[props.getterName]();
                 tracks.addEventListener('removetrack', trackListChanges);
                 tracks.addEventListener('addtrack', trackListChanges);
-                this.on('dispose', () => {
+                this.listenTo('dispose', () => {
                     tracks.removeEventListener('removetrack', trackListChanges);
                     tracks.removeEventListener('addtrack', trackListChanges);
                 });
@@ -4639,7 +4757,7 @@ define('skylark-videojs/tech/tech',[
                 script.onerror = () => {
                     this.trigger('vttjserror');
                 };
-                this.on('dispose', () => {
+                this.listenTo('dispose', () => {
                     script.onload = null;
                     script.onerror = null;
                 });
@@ -4672,7 +4790,7 @@ define('skylark-videojs/tech/tech',[
             tracks.addEventListener('change', textTracksChanges);
             tracks.addEventListener('addtrack', textTracksChanges);
             tracks.addEventListener('removetrack', textTracksChanges);
-            this.on('dispose', function () {
+            this.listenTo('dispose', function () {
                 remoteTracks.off('addtrack', handleAddTrack);
                 remoteTracks.off('removetrack', handleRemoveTrack);
                 tracks.removeEventListener('change', textTracksChanges);
@@ -4866,12 +4984,12 @@ define('skylark-videojs/tech/tech',[
                 }
             }
             this.disposeSourceHandler();
-            this.off('dispose', this.disposeSourceHandler);
+            this.unlistenTo('dispose', this.disposeSourceHandler);
             if (sh !== _Tech.nativeSourceHandler) {
                 this.currentSource_ = source;
             }
             this.sourceHandler_ = sh.handleSource(source, this, this.options_);
-            this.one('dispose', this.disposeSourceHandler);
+            this.listenToOnce('dispose', this.disposeSourceHandler);
         };
         _Tech.prototype.disposeSourceHandler = function () {
             if (this.currentSource_) {
@@ -5227,11 +5345,11 @@ define('skylark-videojs/clickable-component',[
                 if (typeof this.tabIndex_ !== 'undefined') {
                     this.el_.setAttribute('tabIndex', this.tabIndex_);
                 }
-                this.on([
+                this.listenTo([
                     'tap',
                     'click'
                 ], this.handleClick);
-                this.on('keydown', this.handleKeyDown);
+                this.listenTo('keydown', this.handleKeyDown);
             }
         }
         disable() {
@@ -5241,13 +5359,13 @@ define('skylark-videojs/clickable-component',[
             if (typeof this.tabIndex_ !== 'undefined') {
                 this.el_.removeAttribute('tabIndex');
             }
-            this.off('mouseover', this.handleMouseOver);
-            this.off('mouseout', this.handleMouseOut);
-            this.off([
+            this.unlistenTo('mouseover', this.handleMouseOver);
+            this.unlistenTo('mouseout', this.handleMouseOut);
+            this.unlistenTo([
                 'tap',
                 'click'
             ], this.handleClick);
-            this.off('keydown', this.handleKeyDown);
+            this.unlistenTo('keydown', this.handleKeyDown);
         }
         handleLanguagechange() {
             this.controlText(this.controlText_);
@@ -5660,7 +5778,7 @@ define('skylark-videojs/big-play-button',[
         constructor(player, options) {
             super(player, options);
             this.mouseused_ = false;
-            this.on('mousedown', this.handleMouseDown);
+            this.listenTo('mousedown', this.handleMouseDown);
         }
         buildCSSClass() {
             return 'vjs-big-play-button';
@@ -5743,10 +5861,10 @@ define('skylark-videojs/control-bar/play-toggle',[
         constructor(player, options = {}) {
             super(player, options);
             options.replay = options.replay === undefined || options.replay;
-            this.on(player, 'play', this.handlePlay);
-            this.on(player, 'pause', this.handlePause);
+            this.listenTo(player, 'play', this.handlePlay);
+            this.listenTo(player, 'pause', this.handlePause);
             if (options.replay) {
-                this.on(player, 'ended', this.handleEnded);
+                this.listenTo(player, 'ended', this.handleEnded);
             }
         }
         buildCSSClass() {
@@ -5782,7 +5900,7 @@ define('skylark-videojs/control-bar/play-toggle',[
             this.removeClass('vjs-playing');
             this.addClass('vjs-ended');
             this.controlText('Replay');
-            this.one(this.player_, 'seeked', this.handleSeeked);
+            this.listenToOnce(this.player_, 'seeked', this.handleSeeked);
         }
     }
     PlayToggle.prototype.controlText_ = 'Play';
@@ -5833,7 +5951,7 @@ define('skylark-videojs/control-bar/time-controls/time-display',[
     class TimeDisplay extends Component {
         constructor(player, options) {
             super(player, options);
-            this.on(player, [
+            this.listenTo(player, [
                 'timeupdate',
                 'ended'
             ], this.updateContent);
@@ -5923,9 +6041,9 @@ define('skylark-videojs/control-bar/time-controls/duration-display',[
     class DurationDisplay extends TimeDisplay {
         constructor(player, options) {
             super(player, options);
-            this.on(player, 'durationchange', this.updateContent);
-            this.on(player, 'loadstart', this.updateContent);
-            this.on(player, 'loadedmetadata', this.updateContent);
+            this.listenTo(player, 'durationchange', this.updateContent);
+            this.listenTo(player, 'loadstart', this.updateContent);
+            this.listenTo(player, 'loadedmetadata', this.updateContent);
         }
         buildCSSClass() {
             return 'vjs-duration';
@@ -5964,7 +6082,7 @@ define('skylark-videojs/control-bar/time-controls/remaining-time-display',[
     class RemainingTimeDisplay extends TimeDisplay {
         constructor(player, options) {
             super(player, options);
-            this.on(player, 'durationchange', this.updateContent);
+            this.listenTo(player, 'durationchange', this.updateContent);
         }
         buildCSSClass() {
             return 'vjs-remaining-time';
@@ -6003,7 +6121,7 @@ define('skylark-videojs/control-bar/live-display',[
         constructor(player, options) {
             super(player, options);
             this.updateShowing();
-            this.on(this.player(), 'durationchange', this.updateShowing);
+            this.listenTo(this.player(), 'durationchange', this.updateShowing);
         }
         createEl() {
             const el = super.createEl('div', { className: 'vjs-live-control vjs-control' });
@@ -6040,7 +6158,7 @@ define('skylark-videojs/control-bar/seek-to-live',[
             super(player, options);
             this.updateLiveEdgeStatus();
             if (this.player_.liveTracker) {
-                this.on(this.player_.liveTracker, 'liveedgechange', this.updateLiveEdgeStatus);
+                this.listenTo(this.player_.liveTracker, 'liveedgechange', this.updateLiveEdgeStatus);
             }
         }
         createEl() {
@@ -6068,7 +6186,7 @@ define('skylark-videojs/control-bar/seek-to-live',[
         }
         dispose() {
             if (this.player_.liveTracker) {
-                this.off(this.player_.liveTracker, 'liveedgechange', this.updateLiveEdgeStatus);
+                this.unlistenTo(this.player_.liveTracker, 'liveedgechange', this.updateLiveEdgeStatus);
             }
             this.textEl_ = null;
             super.dispose();
@@ -6109,13 +6227,13 @@ define('skylark-videojs/slider/slider',[
             if (this.enabled()) {
                 return;
             }
-            this.on('mousedown', this.handleMouseDown);
-            this.on('touchstart', this.handleMouseDown);
-            this.on('keydown', this.handleKeyDown);
-            this.on('click', this.handleClick);
-            this.on(this.player_, 'controlsvisible', this.update);
+            this.listenTo('mousedown', this.handleMouseDown);
+            this.listenTo('touchstart', this.handleMouseDown);
+            this.listenTo('keydown', this.handleKeyDown);
+            this.listenTo('click', this.handleClick);
+            this.listenTo(this.player_, 'controlsvisible', this.update);
             if (this.playerEvent) {
-                this.on(this.player_, this.playerEvent, this.update);
+                this.listenTo(this.player_, this.playerEvent, this.update);
             }
             this.removeClass('disabled');
             this.setAttribute('tabindex', 0);
@@ -6126,19 +6244,19 @@ define('skylark-videojs/slider/slider',[
                 return;
             }
             const doc = this.bar.el_.ownerDocument;
-            this.off('mousedown', this.handleMouseDown);
-            this.off('touchstart', this.handleMouseDown);
-            this.off('keydown', this.handleKeyDown);
-            this.off('click', this.handleClick);
-            this.off(this.player_, 'controlsvisible', this.update);
-            this.off(doc, 'mousemove', this.handleMouseMove);
-            this.off(doc, 'mouseup', this.handleMouseUp);
-            this.off(doc, 'touchmove', this.handleMouseMove);
-            this.off(doc, 'touchend', this.handleMouseUp);
+            this.unlistenTo('mousedown', this.handleMouseDown);
+            this.unlistenTo('touchstart', this.handleMouseDown);
+            this.unlistenTo('keydown', this.handleKeyDown);
+            this.unlistenTo('click', this.handleClick);
+            this.unlistenTo(this.player_, 'controlsvisible', this.update);
+            this.unlistenTo(doc, 'mousemove', this.handleMouseMove);
+            this.unlistenTo(doc, 'mouseup', this.handleMouseUp);
+            this.unlistenTo(doc, 'touchmove', this.handleMouseMove);
+            this.unlistenTo(doc, 'touchend', this.handleMouseUp);
             this.removeAttribute('tabindex');
             this.addClass('disabled');
             if (this.playerEvent) {
-                this.off(this.player_, this.playerEvent, this.update);
+                this.unlistenTo(this.player_, this.playerEvent, this.update);
             }
             this.enabled_ = false;
         }
@@ -6165,10 +6283,10 @@ define('skylark-videojs/slider/slider',[
             Dom.blockTextSelection();
             this.addClass('vjs-sliding');
             this.trigger('slideractive');
-            this.on(doc, 'mousemove', this.handleMouseMove);
-            this.on(doc, 'mouseup', this.handleMouseUp);
-            this.on(doc, 'touchmove', this.handleMouseMove);
-            this.on(doc, 'touchend', this.handleMouseUp);
+            this.listenTo(doc, 'mousemove', this.handleMouseMove);
+            this.listenTo(doc, 'mouseup', this.handleMouseUp);
+            this.listenTo(doc, 'touchmove', this.handleMouseMove);
+            this.listenTo(doc, 'touchend', this.handleMouseUp);
             this.handleMouseMove(event);
         }
         handleMouseMove(event) {
@@ -6178,10 +6296,10 @@ define('skylark-videojs/slider/slider',[
             Dom.unblockTextSelection();
             this.removeClass('vjs-sliding');
             this.trigger('sliderinactive');
-            this.off(doc, 'mousemove', this.handleMouseMove);
-            this.off(doc, 'mouseup', this.handleMouseUp);
-            this.off(doc, 'touchmove', this.handleMouseMove);
-            this.off(doc, 'touchend', this.handleMouseUp);
+            this.unlistenTo(doc, 'mousemove', this.handleMouseMove);
+            this.unlistenTo(doc, 'mouseup', this.handleMouseUp);
+            this.unlistenTo(doc, 'touchmove', this.handleMouseMove);
+            this.unlistenTo(doc, 'touchend', this.handleMouseUp);
             this.update();
         }
         update() {
@@ -6253,7 +6371,7 @@ define('skylark-videojs/control-bar/progress-control/load-progress-bar',[
         constructor(player, options) {
             super(player, options);
             this.partEls_ = [];
-            this.on(player, 'progress', this.update);
+            this.listenTo(player, 'progress', this.update);
         }
         createEl() {
             const el = super.createEl('div', { className: 'vjs-load-progress' });
@@ -6458,23 +6576,23 @@ define('skylark-videojs/control-bar/progress-control/seek-bar',[
         setEventHandlers_() {
             this.update_ = Fn.bind(this, this.update);
             this.update = Fn.throttle(this.update_, Fn.UPDATE_REFRESH_INTERVAL);
-            this.on(this.player_, [
+            this.listenTo(this.player_, [
                 'ended',
                 'durationchange',
                 'timeupdate'
             ], this.update);
             if (this.player_.liveTracker) {
-                this.on(this.player_.liveTracker, 'liveedgechange', this.update);
+                this.listenTo(this.player_.liveTracker, 'liveedgechange', this.update);
             }
             this.updateInterval = null;
-            this.on(this.player_, ['playing'], this.enableInterval_);
-            this.on(this.player_, [
+            this.listenTo(this.player_, ['playing'], this.enableInterval_);
+            this.listenTo(this.player_, [
                 'ended',
                 'pause',
                 'waiting'
             ], this.disableInterval_);
             if ('hidden' in document && 'visibilityState' in document) {
-                this.on(document, 'visibilitychange', this.toggleVisibility_);
+                this.listenTo(document, 'visibilitychange', this.toggleVisibility_);
             }
         }
         toggleVisibility_(e) {
@@ -6668,22 +6786,22 @@ define('skylark-videojs/control-bar/progress-control/seek-bar',[
         }
         dispose() {
             this.disableInterval_();
-            this.off(this.player_, [
+            thisunlistenTo(this.player_, [
                 'ended',
                 'durationchange',
                 'timeupdate'
             ], this.update);
             if (this.player_.liveTracker) {
-                this.on(this.player_.liveTracker, 'liveedgechange', this.update);
+                this.listenTo(this.player_.liveTracker, 'liveedgechange', this.update);
             }
-            this.off(this.player_, ['playing'], this.enableInterval_);
-            this.off(this.player_, [
+            this.unlistenTo(this.player_, ['playing'], this.enableInterval_);
+            this.unlistenTo(this.player_, [
                 'ended',
                 'pause',
                 'waiting'
             ], this.disableInterval_);
             if ('hidden' in document && 'visibilityState' in document) {
-                this.off(document, 'visibilitychange', this.toggleVisibility_);
+                this.unlistenTo(document, 'visibilitychange', this.toggleVisibility_);
             }
             super.dispose();
         }
@@ -6754,11 +6872,11 @@ define('skylark-videojs/control-bar/progress-control/progress-control',[
             if (!this.enabled()) {
                 return;
             }
-            this.off([
+            this.unlistenTo([
                 'mousedown',
                 'touchstart'
             ], this.handleMouseDown);
-            this.off(this.el_, 'mousemove', this.handleMouseMove);
+            this.unlistenTo(this.el_, 'mousemove', this.handleMouseMove);
             this.handleMouseUp();
             this.addClass('disabled');
             this.enabled_ = false;
@@ -6768,11 +6886,11 @@ define('skylark-videojs/control-bar/progress-control/progress-control',[
             if (this.enabled()) {
                 return;
             }
-            this.on([
+            this.listenTo([
                 'mousedown',
                 'touchstart'
             ], this.handleMouseDown);
-            this.on(this.el_, 'mousemove', this.handleMouseMove);
+            this.listenTo(this.el_, 'mousemove', this.handleMouseMove);
             this.removeClass('disabled');
             this.enabled_ = true;
         }
@@ -6782,10 +6900,10 @@ define('skylark-videojs/control-bar/progress-control/progress-control',[
             if (seekBar) {
                 seekBar.handleMouseDown(event);
             }
-            this.on(doc, 'mousemove', this.throttledHandleMouseSeek);
-            this.on(doc, 'touchmove', this.throttledHandleMouseSeek);
-            this.on(doc, 'mouseup', this.handleMouseUp);
-            this.on(doc, 'touchend', this.handleMouseUp);
+            this.listenTo(doc, 'mousemove', this.throttledHandleMouseSeek);
+            this.listenTo(doc, 'touchmove', this.throttledHandleMouseSeek);
+            this.listenTo(doc, 'mouseup', this.handleMouseUp);
+            this.listenTo(doc, 'touchend', this.handleMouseUp);
         }
         handleMouseUp(event) {
             const doc = this.el_.ownerDocument;
@@ -6793,10 +6911,10 @@ define('skylark-videojs/control-bar/progress-control/progress-control',[
             if (seekBar) {
                 seekBar.handleMouseUp(event);
             }
-            this.off(doc, 'mousemove', this.throttledHandleMouseSeek);
-            this.off(doc, 'touchmove', this.throttledHandleMouseSeek);
-            this.off(doc, 'mouseup', this.handleMouseUp);
-            this.off(doc, 'touchend', this.handleMouseUp);
+            this.unlistenTo(doc, 'mousemove', this.throttledHandleMouseSeek);
+            this.unlistenTo(doc, 'touchmove', this.throttledHandleMouseSeek);
+            this.unlistenTo(doc, 'mouseup', this.handleMouseUp);
+            this.unlistenTo(doc, 'touchend', this.handleMouseUp);
         }
     }
     ProgressControl.prototype.options_ = { children: ['seekBar'] };
@@ -6812,11 +6930,11 @@ define('skylark-videojs/control-bar/picture-in-picture-toggle',[
     class PictureInPictureToggle extends Button {
         constructor(player, options) {
             super(player, options);
-            this.on(player, [
+            this.listenTo(player, [
                 'enterpictureinpicture',
                 'leavepictureinpicture'
             ], this.handlePictureInPictureChange);
-            this.on(player, [
+            this.listenTo(player, [
                 'disablepictureinpicturechanged',
                 'loadedmetadata'
             ], this.handlePictureInPictureEnabledChange);
@@ -6861,7 +6979,7 @@ define('skylark-videojs/control-bar/fullscreen-toggle',[
     class FullscreenToggle extends Button {
         constructor(player, options) {
             super(player, options);
-            this.on(player, 'fullscreenchange', this.handleFullscreenChange);
+            this.listenTo(player, 'fullscreenchange', this.handleFullscreenChange);
             if (document[player.fsApi_.fullscreenEnabled] === false) {
                 this.disable();
             }
@@ -6894,7 +7012,7 @@ define('skylark-videojs/control-bar/volume-control/check-volume-support',[],func
         if (player.tech_ && !player.tech_.featuresVolumeControl) {
             self.addClass('vjs-hidden');
         }
-        self.on(player, 'loadstart', function () {
+        self.listenTo(player, 'loadstart', function () {
             if (!player.tech_.featuresVolumeControl) {
                 self.addClass('vjs-hidden');
             } else {
@@ -6929,8 +7047,8 @@ define('skylark-videojs/control-bar/volume-control/volume-bar',[
     class VolumeBar extends Slider {
         constructor(player, options) {
             super(player, options);
-            this.on('slideractive', this.updateLastVolume_);
-            this.on(player, 'volumechange', this.updateARIAAttributes);
+            this.listenTo('slideractive', this.updateLastVolume_);
+            this.listenTo(player, 'volumechange', this.updateARIAAttributes);
             player.ready(() => this.updateARIAAttributes());
         }
         createEl() {
@@ -6981,7 +7099,7 @@ define('skylark-videojs/control-bar/volume-control/volume-bar',[
         }
         updateLastVolume_() {
             const volumeBeforeDrag = this.player_.volume();
-            this.one('sliderinactive', () => {
+            this.listenToOnce('sliderinactive', () => {
                 if (this.player_.volume() === 0) {
                     this.player_.lastVolume_(volumeBeforeDrag);
                 }
@@ -7014,9 +7132,9 @@ define('skylark-videojs/control-bar/volume-control/volume-control',[
             super(player, options);
             checkVolumeSupport(this, player);
             this.throttledHandleMouseMove = Fn.throttle(Fn.bind(this, this.handleMouseMove), Fn.UPDATE_REFRESH_INTERVAL);
-            this.on('mousedown', this.handleMouseDown);
-            this.on('touchstart', this.handleMouseDown);
-            this.on(this.volumeBar, [
+            this.listenTo('mousedown', this.handleMouseDown);
+            this.listenTo('touchstart', this.handleMouseDown);
+            this.listenTo(this.volumeBar, [
                 'focus',
                 'slideractive'
             ], () => {
@@ -7024,7 +7142,7 @@ define('skylark-videojs/control-bar/volume-control/volume-control',[
                 this.addClass('vjs-slider-active');
                 this.trigger('slideractive');
             });
-            this.on(this.volumeBar, [
+            this.listenTo(this.volumeBar, [
                 'blur',
                 'sliderinactive'
             ], () => {
@@ -7042,17 +7160,17 @@ define('skylark-videojs/control-bar/volume-control/volume-control',[
         }
         handleMouseDown(event) {
             const doc = this.el_.ownerDocument;
-            this.on(doc, 'mousemove', this.throttledHandleMouseMove);
-            this.on(doc, 'touchmove', this.throttledHandleMouseMove);
-            this.on(doc, 'mouseup', this.handleMouseUp);
-            this.on(doc, 'touchend', this.handleMouseUp);
+            this.listenTo(doc, 'mousemove', this.throttledHandleMouseMove);
+            this.listenTo(doc, 'touchmove', this.throttledHandleMouseMove);
+            this.listenTo(doc, 'mouseup', this.handleMouseUp);
+            this.listenTo(doc, 'touchend', this.handleMouseUp);
         }
         handleMouseUp(event) {
             const doc = this.el_.ownerDocument;
-            this.off(doc, 'mousemove', this.throttledHandleMouseMove);
-            this.off(doc, 'touchmove', this.throttledHandleMouseMove);
-            this.off(doc, 'mouseup', this.handleMouseUp);
-            this.off(doc, 'touchend', this.handleMouseUp);
+            this.unlistenTo(doc, 'mousemove', this.throttledHandleMouseMove);
+            this.unlistenTo(doc, 'touchmove', this.throttledHandleMouseMove);
+            this.unlistenTo(doc, 'mouseup', this.handleMouseUp);
+            this.unlistenTo(doc, 'touchend', this.handleMouseUp);
         }
         handleMouseMove(event) {
             this.volumeBar.handleMouseMove(event);
@@ -7068,7 +7186,7 @@ define('skylark-videojs/control-bar/volume-control/check-mute-support',[],functi
         if (player.tech_ && !player.tech_.featuresMuteControl) {
             self.addClass('vjs-hidden');
         }
-        self.on(player, 'loadstart', function () {
+        self.listenTo(player, 'loadstart', function () {
             if (!player.tech_.featuresMuteControl) {
                 self.addClass('vjs-hidden');
             } else {
@@ -7090,7 +7208,7 @@ define('skylark-videojs/control-bar/mute-toggle',[
         constructor(player, options) {
             super(player, options);
             checkMuteSupport(this, player);
-            this.on(player, [
+            this.listenTo(player, [
                 'loadstart',
                 'volumechange'
             ], this.update);
@@ -7166,14 +7284,14 @@ define('skylark-videojs/control-bar/volume-panel',[
                 options.volumeControl.vertical = !options.inline;
             }
             super(player, options);
-            this.on(player, ['loadstart'], this.volumePanelState_);
-            this.on(this.muteToggle, 'keyup', this.handleKeyPress);
-            this.on(this.volumeControl, 'keyup', this.handleVolumeControlKeyUp);
-            this.on('keydown', this.handleKeyPress);
-            this.on('mouseover', this.handleMouseOver);
-            this.on('mouseout', this.handleMouseOut);
-            this.on(this.volumeControl, ['slideractive'], this.sliderActive_);
-            this.on(this.volumeControl, ['sliderinactive'], this.sliderInactive_);
+            this.listenTo(player, ['loadstart'], this.volumePanelState_);
+            this.listenTo(this.muteToggle, 'keyup', this.handleKeyPress);
+            this.listenTo(this.volumeControl, 'keyup', this.handleVolumeControlKeyUp);
+            this.listenTo('keydown', this.handleKeyPress);
+            this.listenTo('mouseover', this.handleMouseOver);
+            this.listenTo('mouseout', this.handleMouseOut);
+            this.listenTo(this.volumeControl, ['slideractive'], this.sliderActive_);
+            this.listenTo(this.volumeControl, ['sliderinactive'], this.sliderInactive_);
         }
         sliderActive_() {
             this.addClass('vjs-slider-active');
@@ -7244,7 +7362,7 @@ define('skylark-videojs/menu/menu',[
                 this.menuButton_ = options.menuButton;
             }
             this.focusedChild_ = -1;
-            this.on('keydown', this.handleKeyDown);
+            this.listenTo('keydown', this.handleKeyDown);
             this.boundHandleBlur_ = Fn.bind(this, this.handleBlur);
             this.boundHandleTapClick_ = Fn.bind(this, this.handleTapClick);
         }
@@ -7252,8 +7370,8 @@ define('skylark-videojs/menu/menu',[
             if (!(component instanceof Component)) {
                 return;
             }
-            this.on(component, 'blur', this.boundHandleBlur_);
-            this.on(component, [
+            this.listenTo(component, 'blur', this.boundHandleBlur_);
+            this.listenTo(component, [
                 'tap',
                 'click'
             ], this.boundHandleTapClick_);
@@ -7262,8 +7380,8 @@ define('skylark-videojs/menu/menu',[
             if (!(component instanceof Component)) {
                 return;
             }
-            this.off(component, 'blur', this.boundHandleBlur_);
-            this.off(component, [
+            this.unlistenTo(component, 'blur', this.boundHandleBlur_);
+            this.unlistenTo(component, [
                 'tap',
                 'click'
             ], this.boundHandleTapClick_);
@@ -7398,16 +7516,16 @@ define('skylark-videojs/menu/menu-button',[
             this.addChild(this.menuButton_);
             this.update();
             this.enabled_ = true;
-            this.on(this.menuButton_, 'tap', this.handleClick);
-            this.on(this.menuButton_, 'click', this.handleClick);
-            this.on(this.menuButton_, 'keydown', this.handleKeyDown);
-            this.on(this.menuButton_, 'mouseenter', () => {
+            this.listenTo(this.menuButton_, 'tap', this.handleClick);
+            this.listenTo(this.menuButton_, 'click', this.handleClick);
+            this.listenTo(this.menuButton_, 'keydown', this.handleKeyDown);
+            this.listenTo(this.menuButton_, 'mouseenter', () => {
                 this.addClass('vjs-hover');
                 this.menu.show();
                 Events.on(document, 'keyup', Fn.bind(this, this.handleMenuKeyUp));
             });
-            this.on('mouseleave', this.handleMouseLeave);
-            this.on('keydown', this.handleSubmenuKeyDown);
+            this.listenTo('mouseleave', this.handleMouseLeave);
+            this.listenTo('keydown', this.handleSubmenuKeyDown);
         }
         update() {
             const menu = this.createMenu();
@@ -7695,7 +7813,7 @@ define('skylark-videojs/control-bar/text-track-controls/text-track-menu-item',[
             ], changeHandler);
             tracks.addEventListener('change', changeHandler);
             tracks.addEventListener('selectedlanguagechange', selectedLanguageChangeHandler);
-            this.on('dispose', function () {
+            this.listenTo('dispose', function () {
                 player.off([
                     'loadstart',
                     'texttrackchange'
@@ -7705,7 +7823,7 @@ define('skylark-videojs/control-bar/text-track-controls/text-track-menu-item',[
             });
             if (tracks.onchange === undefined) {
                 let event;
-                this.on([
+                this.listenTo([
                     'tap',
                     'click'
                 ], function () {
@@ -8017,7 +8135,7 @@ define('skylark-videojs/control-bar/text-track-controls/descriptions-button',[
             const tracks = player.textTracks();
             const changeHandler = Fn.bind(this, this.handleTracksChange);
             tracks.addEventListener('change', changeHandler);
-            this.on('dispose', function () {
+            this.listenTo('dispose', function () {
                 tracks.removeEventListener('change', changeHandler);
             });
         }
@@ -8216,7 +8334,7 @@ define('skylark-videojs/control-bar/audio-track-controls/audio-track-menu-item',
                 this.handleTracksChange.apply(this, args);
             };
             tracks.addEventListener('change', changeHandler);
-            this.on('dispose', () => {
+            this.listenTo('dispose', () => {
                 tracks.removeEventListener('change', changeHandler);
             });
         }
@@ -8298,7 +8416,7 @@ define('skylark-videojs/control-bar/playback-rate-menu/playback-rate-menu-item',
             super(player, options);
             this.label = label;
             this.rate = rate;
-            this.on(player, 'ratechange', this.update);
+            this.listenTo(player, 'ratechange', this.update);
         }
         handleClick(event) {
             super.handleClick();
@@ -8325,8 +8443,8 @@ define('skylark-videojs/control-bar/playback-rate-menu/playback-rate-menu-button
             super(player, options);
             this.updateVisibility();
             this.updateLabel();
-            this.on(player, 'loadstart', this.updateVisibility);
-            this.on(player, 'ratechange', this.updateLabel);
+            this.listenTo(player, 'loadstart', this.updateVisibility);
+            this.listenTo(player, 'ratechange', this.updateLabel);
         }
         createEl() {
             const el = super.createEl();
@@ -8494,7 +8612,7 @@ define('skylark-videojs/error-display',[
     class ErrorDisplay extends ModalDialog {
         constructor(player, options) {
             super(player, options);
-            this.on(player, 'error', this.open);
+            this.listenTo(player, 'error', this.open);
         }
         buildCSSClass() {
             return `vjs-error-display ${ super.buildCSSClass() }`;
@@ -8780,16 +8898,16 @@ define('skylark-videojs/tracks/text-track-settings',[
             if (options.persistTextTrackSettings === undefined) {
                 this.options_.persistTextTrackSettings = this.options_.playerOptions.persistTextTrackSettings;
             }
-            this.on(this.$('.vjs-done-button'), 'click', () => {
+            this.listenTo(this.$('.vjs-done-button'), 'click', () => {
                 this.saveSettings();
                 this.close();
             });
-            this.on(this.$('.vjs-default-button'), 'click', () => {
+            this.listenTo(this.$('.vjs-default-button'), 'click', () => {
                 this.setDefaults();
                 this.updateDisplay();
             });
             Obj.each(selectConfigs, config => {
-                this.on(this.$(config.selector), 'change', this.updateDisplay);
+                this.listenTo(this.$(config.selector), 'change', this.updateDisplay);
             });
             if (this.options_.persistTextTrackSettings) {
                 this.restoreSettings();
@@ -9026,7 +9144,7 @@ define('skylark-videojs/resize-manager',[
                     Events.on(this.el_.contentWindow, 'unload', unloadListener_);
                     Events.on(this.el_.contentWindow, 'resize', debouncedHandler_);
                 };
-                this.one('load', this.loadListener_);
+                this.listenToOnce('load', this.loadListener_);
             }
         }
         createEl() {
@@ -9052,7 +9170,7 @@ define('skylark-videojs/resize-manager',[
                 this.resizeObserver_.disconnect();
             }
             if (this.loadListener_) {
-                this.off('load', this.loadListener_);
+                this.unlistenTo('load', this.loadListener_);
             }
             if (this.el_ && this.el_.contentWindow && this.unloadListener_) {
                 this.unloadListener_.call(this.el_.contentWindow);
@@ -9083,9 +9201,9 @@ define('skylark-videojs/live-tracker',[
             const options_ = mergeOptions(defaults, options, { createEl: false });
             super(player, options_);
             this.reset_();
-            this.on(this.player_, 'durationchange', this.handleDurationchange);
+            this.listenTo(this.player_, 'durationchange', this.handleDurationchange);
             if (browser.IE_VERSION && 'hidden' in document && 'visibilityState' in document) {
-                this.on(document, 'visibilitychange', this.handleVisibilityChange);
+                this.listenTo(document, 'visibilitychange', this.handleVisibilityChange);
             }
         }
         handleVisibilityChange() {
@@ -9138,20 +9256,20 @@ define('skylark-videojs/live-tracker',[
             }
             this.trackingInterval_ = this.setInterval(this.trackLive_, Fn.UPDATE_REFRESH_INTERVAL);
             this.trackLive_();
-            this.on(this.player_, [
+            this.listenTo(this.player_, [
                 'play',
                 'pause'
             ], this.trackLive_);
             if (!this.timeupdateSeen_) {
-                this.one(this.player_, 'play', this.handlePlay);
-                this.one(this.player_, 'timeupdate', this.handleFirstTimeupdate);
+                this.listenToOnce(this.player_, 'play', this.handlePlay);
+                this.listenToOnce(this.player_, 'timeupdate', this.handleFirstTimeupdate);
             } else {
-                this.on(this.player_, 'seeked', this.handleSeeked);
+                this.listenTo(this.player_, 'seeked', this.handleSeeked);
             }
         }
         handleFirstTimeupdate() {
             this.timeupdateSeen_ = true;
-            this.on(this.player_, 'seeked', this.handleSeeked);
+            this.listenTo(this.player_, 'seeked', this.handleSeeked);
         }
         handleSeeked() {
             const timeDiff = Math.abs(this.liveCurrentTime() - this.player_.currentTime());
@@ -9160,7 +9278,7 @@ define('skylark-videojs/live-tracker',[
             this.trackLive_();
         }
         handlePlay() {
-            this.one(this.player_, 'timeupdate', this.seekToLiveEdge);
+            this.listenToOnce(this.player_, 'timeupdate', this.seekToLiveEdge);
         }
         reset_() {
             this.lastTime_ = -1;
@@ -9172,14 +9290,25 @@ define('skylark-videojs/live-tracker',[
             this.skipNextSeeked_ = false;
             this.clearInterval(this.trackingInterval_);
             this.trackingInterval_ = null;
-            this.off(this.player_, [
+
+            /*
+            this.unlistenTo(this.player_, [
                 'play',
                 'pause'
             ], this.trackLive_);
-            this.off(this.player_, 'seeked', this.handleSeeked);
-            this.off(this.player_, 'play', this.handlePlay);
-            this.off(this.player_, 'timeupdate', this.handleFirstTimeupdate);
-            this.off(this.player_, 'timeupdate', this.seekToLiveEdge);
+            this.unlistenTo(this.player_, 'seeked', this.handleSeeked);
+            this.unlistenTo(this.player_, 'play', this.handlePlay);
+            this.unlistenTo(this.player_, 'timeupdate', this.handleFirstTimeupdate);
+            this.unlistenTo(this.player_, 'timeupdate', this.seekToLiveEdge);
+            */
+            this.unlistenTo(this.player_, [
+                'play',
+                'pause'
+            ], this.trackLive_);
+            this.unlistenTo(this.player_, 'seeked', this.handleSeeked);
+            this.unlistenTo(this.player_, 'play', this.handlePlay);
+            this.unlistenTo(this.player_, 'timeupdate', this.handleFirstTimeupdate);
+            this.unlistenTo(this.player_, 'timeupdate', this.seekToLiveEdge);
         }
         stopTracking() {
             if (!this.isTracking()) {
@@ -9245,7 +9374,7 @@ define('skylark-videojs/live-tracker',[
             this.player_.currentTime(this.liveCurrentTime());
         }
         dispose() {
-            this.off(document, 'visibilitychange', this.handleVisibilityChange);
+            this.unlistenTo(document, 'visibilitychange', this.handleVisibilityChange);
             this.stopTracking();
             super.dispose();
         }
@@ -9554,7 +9683,7 @@ define('skylark-videojs/tech/html5',[
             };
             takeMetadataTrackSnapshot();
             textTracks.addEventListener('change', takeMetadataTrackSnapshot);
-            this.on('dispose', () => textTracks.removeEventListener('change', takeMetadataTrackSnapshot));
+            this.listenTo('dispose', () => textTracks.removeEventListener('change', takeMetadataTrackSnapshot));
             const restoreTrackMode = () => {
                 for (let i = 0; i < metadataTracksPreFullscreenState.length; i++) {
                     const storedTrack = metadataTracksPreFullscreenState[i];
@@ -9564,12 +9693,12 @@ define('skylark-videojs/tech/html5',[
                 }
                 textTracks.removeEventListener('change', restoreTrackMode);
             };
-            this.on('webkitbeginfullscreen', () => {
+            this.listenTo('webkitbeginfullscreen', () => {
                 textTracks.removeEventListener('change', takeMetadataTrackSnapshot);
                 textTracks.removeEventListener('change', restoreTrackMode);
                 textTracks.addEventListener('change', restoreTrackMode);
             });
-            this.on('webkitendfullscreen', () => {
+            this.listenTo('webkitendfullscreen', () => {
                 textTracks.removeEventListener('change', takeMetadataTrackSnapshot);
                 textTracks.addEventListener('change', takeMetadataTrackSnapshot);
                 textTracks.removeEventListener('change', restoreTrackMode);
@@ -9645,10 +9774,10 @@ define('skylark-videojs/tech/html5',[
             Object.keys(listeners).forEach(eventName => {
                 const listener = listeners[eventName];
                 elTracks.addEventListener(eventName, listener);
-                this.on('dispose', e => elTracks.removeEventListener(eventName, listener));
+                this.listenTo('dispose', e => elTracks.removeEventListener(eventName, listener));
             });
-            this.on('loadstart', removeOldTracks);
-            this.on('dispose', e => this.off('loadstart', removeOldTracks));
+            this.listenTo('loadstart', removeOldTracks);
+            this.listenTo('dispose', e => this.unlistenTo('loadstart', removeOldTracks));
         }
         proxyNativeTracks_() {
             NORMAL.names.forEach(name => {
@@ -9714,16 +9843,16 @@ define('skylark-videojs/tech/html5',[
                 const setLoadstartFired = function () {
                     loadstartFired = true;
                 };
-                this.on('loadstart', setLoadstartFired);
+                this.listenTo('loadstart', setLoadstartFired);
                 const triggerLoadstart = function () {
                     if (!loadstartFired) {
                         this.trigger('loadstart');
                     }
                 };
-                this.on('loadedmetadata', triggerLoadstart);
+                this.listenTo('loadedmetadata', triggerLoadstart);
                 this.ready(function () {
-                    this.off('loadstart', setLoadstartFired);
-                    this.off('loadedmetadata', triggerLoadstart);
+                    this.unlistenTo('loadstart', setLoadstartFired);
+                    this.unlistenTo('loadedmetadata', triggerLoadstart);
                     if (!loadstartFired) {
                         this.trigger('loadstart');
                     }
@@ -9771,10 +9900,10 @@ define('skylark-videojs/tech/html5',[
                         if (this.el_.duration === Infinity) {
                             this.trigger('durationchange');
                         }
-                        this.off('timeupdate', checkProgress);
+                        this.unlistenTo('timeupdate', checkProgress);
                     }
                 };
-                this.on('timeupdate', checkProgress);
+                this.listenTo('timeupdate', checkProgress);
                 return NaN;
             }
             return this.el_.duration || NaN;
@@ -9794,17 +9923,17 @@ define('skylark-videojs/tech/html5',[
             };
             const beginFn = function () {
                 if ('webkitPresentationMode' in this.el_ && this.el_.webkitPresentationMode !== 'picture-in-picture') {
-                    this.one('webkitendfullscreen', endFn);
+                    this.listenToOnce('webkitendfullscreen', endFn);
                     this.trigger('fullscreenchange', {
                         isFullscreen: true,
                         nativeIOSFullscreen: true
                     });
                 }
             };
-            this.on('webkitbeginfullscreen', beginFn);
-            this.on('dispose', () => {
-                this.off('webkitbeginfullscreen', beginFn);
-                this.off('webkitendfullscreen', endFn);
+            this.listenTo('webkitbeginfullscreen', beginFn);
+            this.listenTo('dispose', () => {
+                this.unlistenTo('webkitbeginfullscreen', beginFn);
+                this.unlistenTo('webkitendfullscreen', endFn);
             });
         }
         supportsFullScreen() {
@@ -10436,13 +10565,13 @@ define('skylark-videojs/player',[
             }
             this.scrubbing_ = false;
             this.el_ = this.createEl();
-            evented(this, { eventBusKey: 'el_' });
+            //evented(this, { eventBusKey: 'el_' });
             if (this.fsApi_.requestFullscreen) {
                 Events.on(document, this.fsApi_.fullscreenchange, this.boundDocumentFullscreenChange_);
-                this.on(this.fsApi_.fullscreenchange, this.boundDocumentFullscreenChange_);
+                this.listenTo(this.fsApi_.fullscreenchange, this.boundDocumentFullscreenChange_);
             }
             if (this.fluid_) {
-                this.on([
+                this.listenTo([
                     'playerreset',
                     'resize'
                 ], this.updateStyleEl_);
@@ -10488,16 +10617,16 @@ define('skylark-videojs/player',[
             this.addClass(`vjs-v${ majorVersion }`);
             this.userActive(true);
             this.reportUserActivity();
-            this.one('play', this.listenForUserActivity_);
-            this.on('stageclick', this.handleStageClick_);
-            this.on('keydown', this.handleKeyDown);
-            this.on('languagechange', this.handleLanguagechange);
+            this.listenToOnce('play', this.listenForUserActivity_);
+            this.listenTo('stageclick', this.handleStageClick_);
+            this.listenTo('keydown', this.handleKeyDown);
+            this.listenTo('languagechange', this.handleLanguagechange);
             this.breakpoints(this.options_.breakpoints);
             this.responsive(this.options_.responsive);
         }
         dispose() {
             this.trigger('dispose');
-            this.off('dispose');
+            this.unlistenTo('dispose');
             Events.off(document, this.fsApi_.fullscreenchange, this.boundDocumentFullscreenChange_);
             Events.off(document, 'keydown', this.boundFullWindowOnEscKey_);
             if (this.styleEl_ && this.styleEl_.parentNode) {
@@ -10659,7 +10788,7 @@ define('skylark-videojs/player',[
             }
             this.fluid_ = !!bool;
             if (evented.isEvented(this)) {
-                this.off([
+                this.unlistenTo([
                     'playerreset',
                     'resize'
                 ], this.updateStyleEl_);
@@ -10668,7 +10797,7 @@ define('skylark-videojs/player',[
                 this.addClass('vjs-fluid');
                 this.fill(false);
                 evented.addEventedCallback(this, () => {
-                    this.on([
+                    this.listenTo([
                         'playerreset',
                         'resize'
                     ], this.updateStyleEl_);
@@ -10812,10 +10941,10 @@ define('skylark-videojs/player',[
             this.tech_.ready(Fn.bind(this, this.handleTechReady_), true);
             textTrackConverter.jsonToTextTracks(this.textTracksJson_ || [], this.tech_);
             TECH_EVENTS_RETRIGGER.forEach(event => {
-                this.on(this.tech_, event, this[`handleTech${ stringCases.toTitleCase(event) }_`]);
+                this.listenTo(this.tech_, event, this[`handleTech${ stringCases.toTitleCase(event) }_`]);
             });
             Object.keys(TECH_EVENTS_QUEUE).forEach(event => {
-                this.on(this.tech_, event, eventObj => {
+                this.listenTo(this.tech_, event, eventObj => {
                     if (this.tech_.playbackRate() === 0 && this.tech_.seeking()) {
                         this.queuedCallbacks_.push({
                             callback: this[`handleTech${ TECH_EVENTS_QUEUE[event] }_`].bind(this),
@@ -10826,24 +10955,24 @@ define('skylark-videojs/player',[
                     this[`handleTech${ TECH_EVENTS_QUEUE[event] }_`](eventObj);
                 });
             });
-            this.on(this.tech_, 'loadstart', this.handleTechLoadStart_);
-            this.on(this.tech_, 'sourceset', this.handleTechSourceset_);
-            this.on(this.tech_, 'waiting', this.handleTechWaiting_);
-            this.on(this.tech_, 'ended', this.handleTechEnded_);
-            this.on(this.tech_, 'seeking', this.handleTechSeeking_);
-            this.on(this.tech_, 'play', this.handleTechPlay_);
-            this.on(this.tech_, 'firstplay', this.handleTechFirstPlay_);
-            this.on(this.tech_, 'pause', this.handleTechPause_);
-            this.on(this.tech_, 'durationchange', this.handleTechDurationChange_);
-            this.on(this.tech_, 'fullscreenchange', this.handleTechFullscreenChange_);
-            this.on(this.tech_, 'fullscreenerror', this.handleTechFullscreenError_);
-            this.on(this.tech_, 'enterpictureinpicture', this.handleTechEnterPictureInPicture_);
-            this.on(this.tech_, 'leavepictureinpicture', this.handleTechLeavePictureInPicture_);
-            this.on(this.tech_, 'error', this.handleTechError_);
-            this.on(this.tech_, 'loadedmetadata', this.updateStyleEl_);
-            this.on(this.tech_, 'posterchange', this.handleTechPosterChange_);
-            this.on(this.tech_, 'textdata', this.handleTechTextData_);
-            this.on(this.tech_, 'ratechange', this.handleTechRateChange_);
+            this.listenTo(this.tech_, 'loadstart', this.handleTechLoadStart_);
+            this.listenTo(this.tech_, 'sourceset', this.handleTechSourceset_);
+            this.listenTo(this.tech_, 'waiting', this.handleTechWaiting_);
+            this.listenTo(this.tech_, 'ended', this.handleTechEnded_);
+            this.listenTo(this.tech_, 'seeking', this.handleTechSeeking_);
+            this.listenTo(this.tech_, 'play', this.handleTechPlay_);
+            this.listenTo(this.tech_, 'firstplay', this.handleTechFirstPlay_);
+            this.listenTo(this.tech_, 'pause', this.handleTechPause_);
+            this.listenTo(this.tech_, 'durationchange', this.handleTechDurationChange_);
+            this.listenTo(this.tech_, 'fullscreenchange', this.handleTechFullscreenChange_);
+            this.listenTo(this.tech_, 'fullscreenerror', this.handleTechFullscreenError_);
+            this.listenTo(this.tech_, 'enterpictureinpicture', this.handleTechEnterPictureInPicture_);
+            this.listenTo(this.tech_, 'leavepictureinpicture', this.handleTechLeavePictureInPicture_);
+            this.listenTo(this.tech_, 'error', this.handleTechError_);
+            this.listenTo(this.tech_, 'loadedmetadata', this.updateStyleEl_);
+            this.listenTo(this.tech_, 'posterchange', this.handleTechPosterChange_);
+            this.listenTo(this.tech_, 'textdata', this.handleTechTextData_);
+            this.listenTo(this.tech_, 'ratechange', this.handleTechRateChange_);
             this.usingNativeControls(this.techGet_('controls'));
             if (this.controls() && !this.usingNativeControls()) {
                 this.addTechControlsListeners_();
@@ -10879,20 +11008,20 @@ define('skylark-videojs/player',[
         }
         addTechControlsListeners_() {
             this.removeTechControlsListeners_();
-            this.on(this.tech_, 'mouseup', this.handleTechClick_);
-            this.on(this.tech_, 'dblclick', this.handleTechDoubleClick_);
-            this.on(this.tech_, 'touchstart', this.handleTechTouchStart_);
-            this.on(this.tech_, 'touchmove', this.handleTechTouchMove_);
-            this.on(this.tech_, 'touchend', this.handleTechTouchEnd_);
-            this.on(this.tech_, 'tap', this.handleTechTap_);
+            this.listenTo(this.tech_, 'mouseup', this.handleTechClick_);
+            this.listenTo(this.tech_, 'dblclick', this.handleTechDoubleClick_);
+            this.listenTo(this.tech_, 'touchstart', this.handleTechTouchStart_);
+            this.listenTo(this.tech_, 'touchmove', this.handleTechTouchMove_);
+            this.listenTo(this.tech_, 'touchend', this.handleTechTouchEnd_);
+            this.listenTo(this.tech_, 'tap', this.handleTechTap_);
         }
         removeTechControlsListeners_() {
-            this.off(this.tech_, 'tap', this.handleTechTap_);
-            this.off(this.tech_, 'touchstart', this.handleTechTouchStart_);
-            this.off(this.tech_, 'touchmove', this.handleTechTouchMove_);
-            this.off(this.tech_, 'touchend', this.handleTechTouchEnd_);
-            this.off(this.tech_, 'mouseup', this.handleTechClick_);
-            this.off(this.tech_, 'dblclick', this.handleTechDoubleClick_);
+            this.unlistenTo(this.tech_, 'tap', this.handleTechTap_);
+            this.unlistenTo(this.tech_, 'touchstart', this.handleTechTouchStart_);
+            this.unlistenTo(this.tech_, 'touchmove', this.handleTechTouchMove_);
+            this.unlistenTo(this.tech_, 'touchend', this.handleTechTouchEnd_);
+            this.unlistenTo(this.tech_, 'mouseup', this.handleTechClick_);
+            this.unlistenTo(this.tech_, 'dblclick', this.handleTechDoubleClick_);
         }
         handleTechReady_() {
             this.triggerReady();
@@ -11065,10 +11194,10 @@ define('skylark-videojs/player',[
             const timeUpdateListener = () => {
                 if (timeWhenWaiting !== this.currentTime()) {
                     this.removeClass('vjs-waiting');
-                    this.off('timeupdate', timeUpdateListener);
+                    this.unlistenTo('timeupdate', timeUpdateListener);
                 }
             };
-            this.on('timeupdate', timeUpdateListener);
+            this.listenTo('timeupdate', timeUpdateListener);
         }
         handleTechCanPlay_() {
             this.removeClass('vjs-waiting');
@@ -11295,7 +11424,7 @@ define('skylark-videojs/player',[
             this.playCallbacks_.push(callback);
             const isSrcReady = Boolean(!this.changingSrc_ && (this.src() || this.currentSrc()));
             if (this.waitToPlay_) {
-                this.off([
+                this.unlistenTo([
                     'ready',
                     'loadstart'
                 ], this.waitToPlay_);
@@ -11305,7 +11434,7 @@ define('skylark-videojs/player',[
                 this.waitToPlay_ = e => {
                     this.play_();
                 };
-                this.one([
+                this.listenToOnce([
                     'ready',
                     'loadstart'
                 ], this.waitToPlay_);
@@ -11364,8 +11493,8 @@ define('skylark-videojs/player',[
                 }
                 if (!this.isReady_ || this.changingSrc_ || !this.tech_ || !this.tech_.isReady_) {
                     this.cache_.initTime = seconds;
-                    this.off('canplay', this.applyInitTime_);
-                    this.one('canplay', this.applyInitTime_);
+                    this.unlistenTo('canplay', this.applyInitTime_);
+                    this.listenToOnce('canplay', this.applyInitTime_);
                     return;
                 }
                 this.techCall_('setCurrentTime', seconds);
@@ -11984,8 +12113,8 @@ define('skylark-videojs/player',[
                     'click',
                     'touchstart'
                 ], triggerSuppressedError);
-                this.one('loadstart', function () {
-                    this.off([
+                this.listenToOnce('loadstart', function () {
+                    this.unlistenTo([
                         'click',
                         'touchstart'
                     ], triggerSuppressedError);
@@ -12057,10 +12186,10 @@ define('skylark-videojs/player',[
                 handleActivity();
                 this.clearInterval(mouseInProgress);
             };
-            this.on('mousedown', handleMouseDown);
-            this.on('mousemove', handleMouseMove);
-            this.on('mouseup', handleMouseUpAndMouseLeave);
-            this.on('mouseleave', handleMouseUpAndMouseLeave);
+            this.listenTo('mousedown', handleMouseDown);
+            this.listenTo('mousemove', handleMouseMove);
+            this.listenTo('mouseup', handleMouseUpAndMouseLeave);
+            this.listenTo('mouseleave', handleMouseUpAndMouseLeave);
             const controlBar = this.getChild('controlBar');
             if (controlBar && !browser.IS_IOS && !browser.IS_ANDROID) {
                 controlBar.on('mouseenter', function (event) {
@@ -12071,8 +12200,8 @@ define('skylark-videojs/player',[
                     this.player().options_.inactivityTimeout = this.player().cache_.inactivityTimeout;
                 });
             }
-            this.on('keydown', handleActivity);
-            this.on('keyup', handleActivity);
+            this.listenTo('keydown', handleActivity);
+            this.listenTo('keyup', handleActivity);
             let inactivityTimeout;
             this.setInterval(function () {
                 if (!this.userActivity_) {
@@ -12232,10 +12361,10 @@ define('skylark-videojs/player',[
             }
             this.responsive_ = value;
             if (value) {
-                this.on('playerresize', this.updateCurrentBreakpoint_);
+                this.listenTo('playerresize', this.updateCurrentBreakpoint_);
                 this.updateCurrentBreakpoint_();
             } else {
-                this.off('playerresize', this.updateCurrentBreakpoint_);
+                this.unlistenTo('playerresize', this.updateCurrentBreakpoint_);
                 this.removeCurrentBreakpoint_();
             }
             return value;
@@ -12502,7 +12631,7 @@ define('skylark-videojs/plugin',[
         dispose() {
             const {name, player} = this;
             this.trigger('dispose');
-            this.off();
+            this.unlistenTo();
             player.off('dispose', this.dispose);
             player[PLUGIN_CACHE_KEY][name] = false;
             this.player = this.state = null;
@@ -12570,7 +12699,10 @@ define('skylark-videojs/plugin',[
     };
     return Plugin;
 });
-define('skylark-videojs/utils/inherits',[],function(){
+define('skylark-videojs/utils/inherits',[
+  "skylark-langx-constructs/inherit"
+],function(inherit){
+  /*
   function _inherits(subClass, superClass) {
     if (typeof superClass !== "function" && superClass !== null) {
       throw new TypeError("Super expression must either be null or a function");
@@ -12585,8 +12717,11 @@ define('skylark-videojs/utils/inherits',[],function(){
     });
     if (superClass) Object.setPrototypeOf(subClass, superClass);
   }
-
+ 
   return _inherits;
+  */
+
+  return inherit;
 });
 
 define('skylark-videojs/extend',[

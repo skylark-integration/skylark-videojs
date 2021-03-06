@@ -22,16 +22,16 @@ define([
             this.addChild(this.menuButton_);
             this.update();
             this.enabled_ = true;
-            this.on(this.menuButton_, 'tap', this.handleClick);
-            this.on(this.menuButton_, 'click', this.handleClick);
-            this.on(this.menuButton_, 'keydown', this.handleKeyDown);
-            this.on(this.menuButton_, 'mouseenter', () => {
+            this.listenTo(this.menuButton_, 'tap', this.handleClick);
+            this.listenTo(this.menuButton_, 'click', this.handleClick);
+            this.listenTo(this.menuButton_, 'keydown', this.handleKeyDown);
+            this.listenTo(this.menuButton_, 'mouseenter', () => {
                 this.addClass('vjs-hover');
                 this.menu.show();
                 Events.on(document, 'keyup', Fn.bind(this, this.handleMenuKeyUp));
             });
-            this.on('mouseleave', this.handleMouseLeave);
-            this.on('keydown', this.handleSubmenuKeyDown);
+            this.listenTo('mouseleave', this.handleMouseLeave);
+            this.listenTo('keydown', this.handleSubmenuKeyDown);
         }
         update() {
             const menu = this.createMenu();

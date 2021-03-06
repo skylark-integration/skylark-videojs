@@ -10,7 +10,7 @@ define([
         constructor(player, options) {
             super(player, options);
             checkMuteSupport(this, player);
-            this.on(player, [
+            this.listenTo(player, [
                 'loadstart',
                 'volumechange'
             ], this.update);

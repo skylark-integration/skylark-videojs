@@ -51,11 +51,11 @@ define([
             if (!this.enabled()) {
                 return;
             }
-            this.off([
+            this.unlistenTo([
                 'mousedown',
                 'touchstart'
             ], this.handleMouseDown);
-            this.off(this.el_, 'mousemove', this.handleMouseMove);
+            this.unlistenTo(this.el_, 'mousemove', this.handleMouseMove);
             this.handleMouseUp();
             this.addClass('disabled');
             this.enabled_ = false;
@@ -65,11 +65,11 @@ define([
             if (this.enabled()) {
                 return;
             }
-            this.on([
+            this.listenTo([
                 'mousedown',
                 'touchstart'
             ], this.handleMouseDown);
-            this.on(this.el_, 'mousemove', this.handleMouseMove);
+            this.listenTo(this.el_, 'mousemove', this.handleMouseMove);
             this.removeClass('disabled');
             this.enabled_ = true;
         }
@@ -79,10 +79,10 @@ define([
             if (seekBar) {
                 seekBar.handleMouseDown(event);
             }
-            this.on(doc, 'mousemove', this.throttledHandleMouseSeek);
-            this.on(doc, 'touchmove', this.throttledHandleMouseSeek);
-            this.on(doc, 'mouseup', this.handleMouseUp);
-            this.on(doc, 'touchend', this.handleMouseUp);
+            this.listenTo(doc, 'mousemove', this.throttledHandleMouseSeek);
+            this.listenTo(doc, 'touchmove', this.throttledHandleMouseSeek);
+            this.listenTo(doc, 'mouseup', this.handleMouseUp);
+            this.listenTo(doc, 'touchend', this.handleMouseUp);
         }
         handleMouseUp(event) {
             const doc = this.el_.ownerDocument;
@@ -90,10 +90,10 @@ define([
             if (seekBar) {
                 seekBar.handleMouseUp(event);
             }
-            this.off(doc, 'mousemove', this.throttledHandleMouseSeek);
-            this.off(doc, 'touchmove', this.throttledHandleMouseSeek);
-            this.off(doc, 'mouseup', this.handleMouseUp);
-            this.off(doc, 'touchend', this.handleMouseUp);
+            this.unlistenTo(doc, 'mousemove', this.throttledHandleMouseSeek);
+            this.unlistenTo(doc, 'touchmove', this.throttledHandleMouseSeek);
+            this.unlistenTo(doc, 'mouseup', this.handleMouseUp);
+            this.unlistenTo(doc, 'touchend', this.handleMouseUp);
         }
     }
     ProgressControl.prototype.options_ = { children: ['seekBar'] };

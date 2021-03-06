@@ -7,7 +7,7 @@ define([
     class RemainingTimeDisplay extends TimeDisplay {
         constructor(player, options) {
             super(player, options);
-            this.on(player, 'durationchange', this.updateContent);
+            this.listenTo(player, 'durationchange', this.updateContent);
         }
         buildCSSClass() {
             return 'vjs-remaining-time';

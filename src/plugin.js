@@ -92,7 +92,7 @@ define([
         dispose() {
             const {name, player} = this;
             this.trigger('dispose');
-            this.off();
+            this.unlistenTo();
             player.off('dispose', this.dispose);
             player[PLUGIN_CACHE_KEY][name] = false;
             this.player = this.state = null;

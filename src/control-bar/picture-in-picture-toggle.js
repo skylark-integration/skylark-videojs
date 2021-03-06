@@ -7,11 +7,11 @@ define([
     class PictureInPictureToggle extends Button {
         constructor(player, options) {
             super(player, options);
-            this.on(player, [
+            this.listenTo(player, [
                 'enterpictureinpicture',
                 'leavepictureinpicture'
             ], this.handlePictureInPictureChange);
-            this.on(player, [
+            this.listenTo(player, [
                 'disablepictureinpicturechanged',
                 'loadedmetadata'
             ], this.handlePictureInPictureEnabledChange);

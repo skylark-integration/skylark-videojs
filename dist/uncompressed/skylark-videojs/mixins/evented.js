@@ -92,9 +92,9 @@ define([
             const {isTargetingSelf, target, type, listener} = normalizeListenArgs(this, args, 'on');
             listen(target, 'on', type, listener);
             if (!isTargetingSelf) {
-                const removeListenerOnDispose = () => this.off(target, type, listener);
+                const removeListenerOnDispose = () => this.unlistenTo(target, type, listener);
                 removeListenerOnDispose.guid = listener.guid;
-                const removeRemoverOnTargetDispose = () => this.off('dispose', removeListenerOnDispose);
+                const removeRemoverOnTargetDispose = () => this.unlistenTo('dispose', removeListenerOnDispose);
                 removeRemoverOnTargetDispose.guid = listener.guid;
                 listen(this, 'on', 'dispose', removeListenerOnDispose);
                 listen(target, 'on', 'dispose', removeRemoverOnTargetDispose);
@@ -106,7 +106,7 @@ define([
                 listen(target, 'one', type, listener);
             } else {
                 const wrapper = (...largs) => {
-                    this.off(target, type, wrapper);
+                    this.unlistenTo(target, type, wrapper);
                     listener.apply(null, largs);
                 };
                 wrapper.guid = listener.guid;
@@ -119,7 +119,7 @@ define([
                 listen(target, 'any', type, listener);
             } else {
                 const wrapper = (...largs) => {
-                    this.off(target, type, wrapper);
+                    this.unlistenTo(target, type, wrapper);
                     listener.apply(null, largs);
                 };
                 wrapper.guid = listener.guid;
@@ -136,7 +136,7 @@ define([
                 validateEventType(type, this, 'off');
                 validateListener(listener, this, 'off');
                 listener = Fn.bind(this, listener);
-                this.off('dispose', listener);
+                this.unlistenTo('dispose', listener);
                 if (target.nodeName) {
                     Events.off(target, type, listener);
                     Events.off(target, 'dispose', listener);

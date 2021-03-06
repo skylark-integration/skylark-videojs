@@ -25,7 +25,7 @@ define([
             ], changeHandler);
             tracks.addEventListener('change', changeHandler);
             tracks.addEventListener('selectedlanguagechange', selectedLanguageChangeHandler);
-            this.on('dispose', function () {
+            this.listenTo('dispose', function () {
                 player.off([
                     'loadstart',
                     'texttrackchange'
@@ -35,7 +35,7 @@ define([
             });
             if (tracks.onchange === undefined) {
                 let event;
-                this.on([
+                this.listenTo([
                     'tap',
                     'click'
                 ], function () {

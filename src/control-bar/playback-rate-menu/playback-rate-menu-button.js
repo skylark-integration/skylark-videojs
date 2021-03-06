@@ -11,8 +11,8 @@ define([
             super(player, options);
             this.updateVisibility();
             this.updateLabel();
-            this.on(player, 'loadstart', this.updateVisibility);
-            this.on(player, 'ratechange', this.updateLabel);
+            this.listenTo(player, 'loadstart', this.updateVisibility);
+            this.listenTo(player, 'ratechange', this.updateLabel);
         }
         createEl() {
             const el = super.createEl();

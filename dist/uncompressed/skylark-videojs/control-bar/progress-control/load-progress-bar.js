@@ -10,7 +10,7 @@ define([
         constructor(player, options) {
             super(player, options);
             this.partEls_ = [];
-            this.on(player, 'progress', this.update);
+            this.listenTo(player, 'progress', this.update);
         }
         createEl() {
             const el = super.createEl('div', { className: 'vjs-load-progress' });

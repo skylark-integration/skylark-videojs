@@ -1,9 +1,10 @@
 define([
     'skylark-langx-globals/document',
+    "skylark-domx",
     './dom-data',
     './guid',
     './log'
-], function (document, DomData, Guid, log) {
+], function (document, domx, DomData, Guid, log) {
     'use strict';
     function _cleanUpEvents(elem, type) {
         if (!DomData.has(elem)) {
@@ -266,10 +267,10 @@ define([
     }
     return {
         fixEvent: fixEvent,
-        on: on,
-        off: off,
-        trigger: trigger,
-        one: one,
-        any: any
+        on: domx.eventer.on, //on,
+        off: domx.eventer.off, //off,
+        trigger: domx.eventer.trigger, //trigger,
+        one: domx.eventer.one, //one,
+        any: domx.eventer.one //any
     };
 });

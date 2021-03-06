@@ -8,8 +8,8 @@ define([
     class VolumeBar extends Slider {
         constructor(player, options) {
             super(player, options);
-            this.on('slideractive', this.updateLastVolume_);
-            this.on(player, 'volumechange', this.updateARIAAttributes);
+            this.listenTo('slideractive', this.updateLastVolume_);
+            this.listenTo(player, 'volumechange', this.updateARIAAttributes);
             player.ready(() => this.updateARIAAttributes());
         }
         createEl() {
@@ -60,7 +60,7 @@ define([
         }
         updateLastVolume_() {
             const volumeBeforeDrag = this.player_.volume();
-            this.one('sliderinactive', () => {
+            this.listenToOnce('sliderinactive', () => {
                 if (this.player_.volume() === 0) {
                     this.player_.lastVolume_(volumeBeforeDrag);
                 }

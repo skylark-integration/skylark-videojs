@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define(function(){"use strict";return function(e,t){t.tech_&&!t.tech_.featuresVolumeControl&&e.addClass("vjs-hidden"),e.on(t,"loadstart",function(){t.tech_.featuresVolumeControl?e.removeClass("vjs-hidden"):e.addClass("vjs-hidden")})}});
+define(function(){"use strict";return function(e,t){t.tech_&&!t.tech_.featuresVolumeControl&&e.addClass("vjs-hidden"),e.listenTo(t,"loadstart",function(){t.tech_.featuresVolumeControl?e.removeClass("vjs-hidden"):e.addClass("vjs-hidden")})}});
 //# sourceMappingURL=../../sourcemaps/control-bar/volume-control/check-volume-support.js.map

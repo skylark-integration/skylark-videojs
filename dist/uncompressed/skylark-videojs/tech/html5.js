@@ -108,7 +108,7 @@ define([
             };
             takeMetadataTrackSnapshot();
             textTracks.addEventListener('change', takeMetadataTrackSnapshot);
-            this.on('dispose', () => textTracks.removeEventListener('change', takeMetadataTrackSnapshot));
+            this.listenTo('dispose', () => textTracks.removeEventListener('change', takeMetadataTrackSnapshot));
             const restoreTrackMode = () => {
                 for (let i = 0; i < metadataTracksPreFullscreenState.length; i++) {
                     const storedTrack = metadataTracksPreFullscreenState[i];
@@ -118,12 +118,12 @@ define([
                 }
                 textTracks.removeEventListener('change', restoreTrackMode);
             };
-            this.on('webkitbeginfullscreen', () => {
+            this.listenTo('webkitbeginfullscreen', () => {
                 textTracks.removeEventListener('change', takeMetadataTrackSnapshot);
                 textTracks.removeEventListener('change', restoreTrackMode);
                 textTracks.addEventListener('change', restoreTrackMode);
             });
-            this.on('webkitendfullscreen', () => {
+            this.listenTo('webkitendfullscreen', () => {
                 textTracks.removeEventListener('change', takeMetadataTrackSnapshot);
                 textTracks.addEventListener('change', takeMetadataTrackSnapshot);
                 textTracks.removeEventListener('change', restoreTrackMode);
@@ -199,10 +199,10 @@ define([
             Object.keys(listeners).forEach(eventName => {
                 const listener = listeners[eventName];
                 elTracks.addEventListener(eventName, listener);
-                this.on('dispose', e => elTracks.removeEventListener(eventName, listener));
+                this.listenTo('dispose', e => elTracks.removeEventListener(eventName, listener));
             });
-            this.on('loadstart', removeOldTracks);
-            this.on('dispose', e => this.off('loadstart', removeOldTracks));
+            this.listenTo('loadstart', removeOldTracks);
+            this.listenTo('dispose', e => this.unlistenTo('loadstart', removeOldTracks));
         }
         proxyNativeTracks_() {
             NORMAL.names.forEach(name => {
@@ -268,16 +268,16 @@ define([
                 const setLoadstartFired = function () {
                     loadstartFired = true;
                 };
-                this.on('loadstart', setLoadstartFired);
+                this.listenTo('loadstart', setLoadstartFired);
                 const triggerLoadstart = function () {
                     if (!loadstartFired) {
                         this.trigger('loadstart');
                     }
                 };
-                this.on('loadedmetadata', triggerLoadstart);
+                this.listenTo('loadedmetadata', triggerLoadstart);
                 this.ready(function () {
-                    this.off('loadstart', setLoadstartFired);
-                    this.off('loadedmetadata', triggerLoadstart);
+                    this.unlistenTo('loadstart', setLoadstartFired);
+                    this.unlistenTo('loadedmetadata', triggerLoadstart);
                     if (!loadstartFired) {
                         this.trigger('loadstart');
                     }
@@ -325,10 +325,10 @@ define([
                         if (this.el_.duration === Infinity) {
                             this.trigger('durationchange');
                         }
-                        this.off('timeupdate', checkProgress);
+                        this.unlistenTo('timeupdate', checkProgress);
                     }
                 };
-                this.on('timeupdate', checkProgress);
+                this.listenTo('timeupdate', checkProgress);
                 return NaN;
             }
             return this.el_.duration || NaN;
@@ -348,17 +348,17 @@ define([
             };
             const beginFn = function () {
                 if ('webkitPresentationMode' in this.el_ && this.el_.webkitPresentationMode !== 'picture-in-picture') {
-                    this.one('webkitendfullscreen', endFn);
+                    this.listenToOnce('webkitendfullscreen', endFn);
                     this.trigger('fullscreenchange', {
                         isFullscreen: true,
                         nativeIOSFullscreen: true
                     });
                 }
             };
-            this.on('webkitbeginfullscreen', beginFn);
-            this.on('dispose', () => {
-                this.off('webkitbeginfullscreen', beginFn);
-                this.off('webkitendfullscreen', endFn);
+            this.listenTo('webkitbeginfullscreen', beginFn);
+            this.listenTo('dispose', () => {
+                this.unlistenTo('webkitbeginfullscreen', beginFn);
+                this.unlistenTo('webkitendfullscreen', endFn);
             });
         }
         supportsFullScreen() {

@@ -10,7 +10,7 @@ define([
             const tracks = player.textTracks();
             const changeHandler = Fn.bind(this, this.handleTracksChange);
             tracks.addEventListener('change', changeHandler);
-            this.on('dispose', function () {
+            this.listenTo('dispose', function () {
                 tracks.removeEventListener('change', changeHandler);
             });
         }

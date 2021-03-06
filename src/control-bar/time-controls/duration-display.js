@@ -6,9 +6,9 @@ define([
     class DurationDisplay extends TimeDisplay {
         constructor(player, options) {
             super(player, options);
-            this.on(player, 'durationchange', this.updateContent);
-            this.on(player, 'loadstart', this.updateContent);
-            this.on(player, 'loadedmetadata', this.updateContent);
+            this.listenTo(player, 'durationchange', this.updateContent);
+            this.listenTo(player, 'loadstart', this.updateContent);
+            this.listenTo(player, 'loadedmetadata', this.updateContent);
         }
         buildCSSClass() {
             return 'vjs-duration';

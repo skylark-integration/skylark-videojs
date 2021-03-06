@@ -1,4 +1,7 @@
 define([
+    "skylark-langx",
+    "skylark-domx-eventer",
+    "skylark-widgets-base/Widget",
     './mixins/evented',
     './mixins/stateful',
     './utils/dom',
@@ -10,10 +13,78 @@ define([
     './utils/computed-style',
     './utils/map',
     './utils/set'
-], function (evented, stateful, Dom, DomData, Fn, Guid, stringCases, mergeOptions, computedStyle, Map, Set) {
+], function (langx,eventer,Widget,evented, stateful, Dom, DomData, Fn, Guid, stringCases, mergeOptions, computedStyle, Map, Set) {
     'use strict';
-    class Component {
-        constructor(player, options, ready) {
+    class Component extends Widget {
+        on(events, selector, data, callback, ctx, /*used internally*/ one) {
+            if (this.el_ && eventer.isNativeEvent(events)) {
+                eventer.on(this.el_,events,selector,data,callback,ctx,one);
+            } else {
+                super.on(events, selector, data, callback, ctx,  one);
+            }
+        }   
+
+        off(events, callback) {
+            if (this.el_ && eventer.isNativeEvent(events)) {
+                eventer.off(this.el_,events,callback);
+            } else {
+                super.off(events,callback);
+            }
+        }
+
+        listenTo (obj, event, callback, /*used internally*/ one) {
+            if (langx.isString(obj) || langx.isArray(obj)) {
+                one = callback;
+                callback = event;
+                event = obj;
+                if (this.el_ && eventer.isNativeEvent(event)) {
+                    eventer.on(this.el_,event,callback,this,one);
+                } else {
+                    this.on(event,callback,this,one);
+                }
+            } else {
+                if (obj.nodeType) {
+                    eventer.on(obj,event,callback,this,one)
+                } else {
+                    super.listenTo(obj,event,callback,one)
+                }                
+            }
+        }
+
+        unlistenTo(obj, event, callback) {
+            if (langx.isString(obj) || langx.isArray(obj)) {
+                callback = event;
+                event = obj;
+                if (this.el_ && eventer.isNativeEvent(event)) {
+                    eventer.off(this.el_,event,callback);
+                } else {
+                    this.off(event,callback);                   
+                }
+            } else {
+                if (obj.nodeType) {
+                    eventer.off(obj,event,callback)
+                } else {
+                    super.unlistenTo(obj,event,callback)
+                }
+            }
+        }
+
+        _create() {
+
+        }
+
+
+        _construct(player, options, ready) {
+            /*
+            var el;
+            if (options.el) {
+               el = options.el;
+            } else if (options.createEl !== false) {
+                el = this.createEl();
+            }
+            super(el);
+            */
+
             if (!player && this.play) {
                 this.player_ = player = this;
             } else {
@@ -30,15 +101,20 @@ define([
             }
             this.name_ = options.name || null;
             if (options.el) {
-                this.el_ = options.el;
+               this.el_ = options.el;
             } else if (options.createEl !== false) {
                 this.el_ = this.createEl();
             }
+            //this.el_ = this._elm;
+
             if (options.evented !== false) {
-                evented(this, { eventBusKey: this.el_ ? 'el_' : null });
+                ///evented(this, { eventBusKey: this.el_ ? 'el_' : null });
                 this.handleLanguagechange = this.handleLanguagechange.bind(this);
-                this.on(this.player_, 'languagechange', this.handleLanguagechange);
+                ///this.listenTo(this.player_, 'languagechange', this.handleLanguagechange);
+                this.listenTo(this.player_, 'languagechange', this.handleLanguagechange);
             }
+
+
             stateful(this, this.constructor.defaultState);
             this.children_ = [];
             this.childIndex_ = {};
@@ -83,9 +159,10 @@ define([
                 if (this.el_.parentNode) {
                     this.el_.parentNode.removeChild(this.el_);
                 }
-                if (DomData.has(this.el_)) {
-                    DomData.delete(this.el_);
-                }
+                ///if (DomData.has(this.el_)) {
+                ///    DomData.delete(this.el_);
+                ///}
+                eventer.clear(this.el_);
                 this.el_ = null;
             }
             this.player_ = null;
@@ -447,7 +524,7 @@ define([
             const tapMovementThreshold = 10;
             const touchTimeThreshold = 200;
             let couldBeTap;
-            this.on('touchstart', function (event) {
+            this.listenTo('touchstart', function (event) {
                 if (event.touches.length === 1) {
                     firstTouch = {
                         pageX: event.touches[0].pageX,
@@ -457,7 +534,7 @@ define([
                     couldBeTap = true;
                 }
             });
-            this.on('touchmove', function (event) {
+            this.listenTo('touchmove', function (event) {
                 if (event.touches.length > 1) {
                     couldBeTap = false;
                 } else if (firstTouch) {
@@ -472,9 +549,9 @@ define([
             const noTap = function () {
                 couldBeTap = false;
             };
-            this.on('touchleave', noTap);
-            this.on('touchcancel', noTap);
-            this.on('touchend', function (event) {
+            this.listenTo('touchleave', noTap);
+            this.listenTo('touchcancel', noTap);
+            this.listenTo('touchend', function (event) {
                 firstTouch = null;
                 if (couldBeTap === true) {
                     const touchTime = window.performance.now() - touchStart;
@@ -491,7 +568,7 @@ define([
             }
             const report = Fn.bind(this.player(), this.player().reportUserActivity);
             let touchHolding;
-            this.on('touchstart', function () {
+            this.listenTo('touchstart', function () {
                 report();
                 this.clearInterval(touchHolding);
                 touchHolding = this.setInterval(report, 250);
@@ -500,9 +577,9 @@ define([
                 report();
                 this.clearInterval(touchHolding);
             };
-            this.on('touchmove', report);
-            this.on('touchend', touchEnd);
-            this.on('touchcancel', touchEnd);
+            this.listenTo('touchmove', report);
+            this.listenTo('touchend', touchEnd);
+            this.listenTo('touchcancel', touchEnd);
         }
         setTimeout(fn, timeout) {
             var timeoutId, disposeFn;
@@ -591,7 +668,7 @@ define([
                 return;
             }
             this.clearingTimersOnDispose_ = true;
-            this.one('dispose', () => {
+            this.listenToOnce('dispose', () => {
                 [
                     [
                         'namedRafs_',

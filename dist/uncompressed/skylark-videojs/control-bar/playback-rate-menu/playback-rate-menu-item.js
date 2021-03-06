@@ -14,7 +14,7 @@ define([
             super(player, options);
             this.label = label;
             this.rate = rate;
-            this.on(player, 'ratechange', this.update);
+            this.listenTo(player, 'ratechange', this.update);
         }
         handleClick(event) {
             super.handleClick();

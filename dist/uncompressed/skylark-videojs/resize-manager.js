@@ -39,7 +39,7 @@ define([
                     Events.on(this.el_.contentWindow, 'unload', unloadListener_);
                     Events.on(this.el_.contentWindow, 'resize', debouncedHandler_);
                 };
-                this.one('load', this.loadListener_);
+                this.listenToOnce('load', this.loadListener_);
             }
         }
         createEl() {
@@ -65,7 +65,7 @@ define([
                 this.resizeObserver_.disconnect();
             }
             if (this.loadListener_) {
-                this.off('load', this.loadListener_);
+                this.unlistenTo('load', this.loadListener_);
             }
             if (this.el_ && this.el_.contentWindow && this.unloadListener_) {
                 this.unloadListener_.call(this.el_.contentWindow);

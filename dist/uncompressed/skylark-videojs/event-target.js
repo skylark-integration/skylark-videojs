@@ -1,7 +1,10 @@
 define([
+    "skylark-langx-events/Emitter",
     './utils/events'
-], function (Events) {
+], function (Emitter,Events) {
     'use strict';
+
+    /*
     const EventTarget = function () {
     };
     EventTarget.prototype.allowedEvents_ = {};
@@ -43,6 +46,15 @@ define([
         Events.trigger(this, event);
     };
     EventTarget.prototype.dispatchEvent = EventTarget.prototype.trigger;
+
+    */
+
+    var EventTarget = Emitter.inherit({});
+    EventTarget.prototype.addEventListener = EventTarget.prototype.on;
+    EventTarget.prototype.dispatchEvent = EventTarget.prototype.trigger;
+    EventTarget.prototype.removeEventListener = EventTarget.prototype.off;
+    EventTarget.prototype.any = EventTarget.prototype.one;
+
     let EVENT_MAP;
     EventTarget.prototype.queueTrigger = function (event) {
         if (!EVENT_MAP) {
@@ -66,5 +78,6 @@ define([
         }, 0);
         map.set(type, timeout);
     };
+
     return EventTarget;
 });

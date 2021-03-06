@@ -7,7 +7,7 @@ define([
         constructor(player, options) {
             super(player, options);
             this.updateShowing();
-            this.on(this.player(), 'durationchange', this.updateShowing);
+            this.listenTo(this.player(), 'durationchange', this.updateShowing);
         }
         createEl() {
             const el = super.createEl('div', { className: 'vjs-live-control vjs-control' });

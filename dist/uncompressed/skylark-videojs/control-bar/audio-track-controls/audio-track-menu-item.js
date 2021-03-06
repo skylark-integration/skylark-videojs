@@ -17,7 +17,7 @@ define([
                 this.handleTracksChange.apply(this, args);
             };
             tracks.addEventListener('change', changeHandler);
-            this.on('dispose', () => {
+            this.listenTo('dispose', () => {
                 tracks.removeEventListener('change', changeHandler);
             });
         }

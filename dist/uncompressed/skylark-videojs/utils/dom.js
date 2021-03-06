@@ -1,12 +1,13 @@
 define([
     "skylark-langx-globals/window",
     "skylark-langx-globals/document",   
+    "skylark-domx",
     '../fullscreen-api',
     './log',
     './obj',
     './computed-style',
     './browser'
-], function (window,document,fs, log, obj, computedStyle, browser) {
+], function (window,document,domx,fs, log, obj, computedStyle, browser) {
     'use strict';
     function isNonBlankString(str) {
         return typeof str === 'string' && Boolean(str.trim());
@@ -309,32 +310,50 @@ define([
     const $$ = createQuerier('querySelectorAll');
     return {
         isReal: browser.isReal,
-        isEl: isEl,
-        isInFrame: isInFrame,
-        createEl: createEl,
-        textContent: textContent,
-        prependTo: prependTo,
-        hasClass: hasClass,
-        addClass: addClass,
-        removeClass: removeClass,
-        toggleClass: toggleClass,
-        setAttributes: setAttributes,
+        isEl: domx.noder.isElement,// isEl,
+        isInFrame: domx.noder.isInFrame, //isInFrame,
+        createEl:  function (tagName = 'div', properties = {}, attributes = {}, content) { //createEl,
+            var el  = domx.noder.createElement(tagName,properties,attributes);
+            if (content) {
+                domx.noder.append(el,content)
+            }
+            return el;
+        }, 
+        textContent: domx.data.text, //textContent,
+        prependTo: function (child, parent) { //prependTo,
+            domx.noder.prepend(parent,child);
+        },
+        hasClass: domx.styler.hasClass, //hasClass,
+        addClass: domx.styler.addClass,  //addClass,
+        removeClass: domx.styler.removeClass, //removeClass,
+        toggleClass: domx.styler.toogleClass, //toggleClass,
+        setAttributes: domx.data.attr, // setAttributes,
         getAttributes: getAttributes,
-        getAttribute: getAttribute,
-        setAttribute: setAttribute,
-        removeAttribute: removeAttribute,
+        getAttribute: domx.data.attr, //getAttribute,
+        setAttribute: domx.data.attr, //setAttribute,
+        removeAttribute: domx.data.removeAttr, //removeAttribute,
         blockTextSelection: blockTextSelection,
         unblockTextSelection: unblockTextSelection,
         getBoundingClientRect: getBoundingClientRect,
-        findPosition: findPosition,
+        findPosition: domx.geom.pageRect, //findPosition,
         getPointerPosition: getPointerPosition,
-        isTextNode: isTextNode,
-        emptyEl: emptyEl,
+        isTextNode: domx.noder.isTextNode,// isTextNode,
+        emptyEl: domx.noder.empty, //emptyEl,
         normalizeContent: normalizeContent,
-        appendContent: appendContent,
-        insertContent: insertContent,
+        appendContent: domx.noder.append,//appendContent,
+        insertContent: function(el,content) { //insertContent,
+            domx.noder.empty(el);
+            domx.noder.append(el,content);
+            return el;
+        },
         isSingleLeftClick: isSingleLeftClick,
-        $: $,
-        $$: $$
+        $: function(selector,context) {
+            context = context || document;
+            return domx.finder.find(context,selector);
+        },
+        $$: function(selector,context) {
+            context = context || document;
+            return domx.finder.findAll(context,selector);
+        }
     };
 });

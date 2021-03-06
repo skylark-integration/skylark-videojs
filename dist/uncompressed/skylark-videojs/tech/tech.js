@@ -34,10 +34,10 @@ define([
             options.reportTouchActivity = false;
             super(null, options, ready);
             this.hasStarted_ = false;
-            this.on('playing', function () {
+            this.listenTo('playing', function () {
                 this.hasStarted_ = true;
             });
-            this.on('loadstart', function () {
+            this.listenTo('loadstart', function () {
                 this.hasStarted_ = false;
             });
             TRACK_TYPES.ALL.names.forEach(name => {
@@ -81,7 +81,7 @@ define([
         }
         triggerSourceset(src) {
             if (!this.isReady_) {
-                this.one('ready', () => this.setTimeout(() => this.triggerSourceset(src), 1));
+                this.listenToOnce('ready', () => this.setTimeout(() => this.triggerSourceset(src), 1));
             }
             this.trigger({
                 src,
@@ -89,14 +89,14 @@ define([
             });
         }
         manualProgressOn() {
-            this.on('durationchange', this.onDurationChange);
+            this.listenTo('durationchange', this.listenToDurationChange);
             this.manualProgress = true;
-            this.one('ready', this.trackProgress);
+            this.listenToOnce('ready', this.trackProgress);
         }
         manualProgressOff() {
             this.manualProgress = false;
             this.stopTrackingProgress();
-            this.off('durationchange', this.onDurationChange);
+            this.unlistenTo('durationchange', this.listenToDurationChange);
         }
         trackProgress(event) {
             this.stopTrackingProgress();
@@ -125,14 +125,14 @@ define([
         }
         manualTimeUpdatesOn() {
             this.manualTimeUpdates = true;
-            this.on('play', this.trackCurrentTime);
-            this.on('pause', this.stopTrackingCurrentTime);
+            this.listenTo('play', this.trackCurrentTime);
+            this.listenTo('pause', this.stopTrackingCurrentTime);
         }
         manualTimeUpdatesOff() {
             this.manualTimeUpdates = false;
             this.stopTrackingCurrentTime();
-            this.off('play', this.trackCurrentTime);
-            this.off('pause', this.stopTrackingCurrentTime);
+            this.unlistenTo('play', this.trackCurrentTime);
+            this.unlistenTo('pause', this.stopTrackingCurrentTime);
         }
         trackCurrentTime() {
             if (this.currentTimeInterval) {
@@ -229,7 +229,7 @@ define([
                 const tracks = this[props.getterName]();
                 tracks.addEventListener('removetrack', trackListChanges);
                 tracks.addEventListener('addtrack', trackListChanges);
-                this.on('dispose', () => {
+                this.listenTo('dispose', () => {
                     tracks.removeEventListener('removetrack', trackListChanges);
                     tracks.removeEventListener('addtrack', trackListChanges);
                 });
@@ -252,7 +252,7 @@ define([
                 script.onerror = () => {
                     this.trigger('vttjserror');
                 };
-                this.on('dispose', () => {
+                this.listenTo('dispose', () => {
                     script.onload = null;
                     script.onerror = null;
                 });
@@ -285,7 +285,7 @@ define([
             tracks.addEventListener('change', textTracksChanges);
             tracks.addEventListener('addtrack', textTracksChanges);
             tracks.addEventListener('removetrack', textTracksChanges);
-            this.on('dispose', function () {
+            this.listenTo('dispose', function () {
                 remoteTracks.off('addtrack', handleAddTrack);
                 remoteTracks.off('removetrack', handleRemoveTrack);
                 tracks.removeEventListener('change', textTracksChanges);
@@ -479,12 +479,12 @@ define([
                 }
             }
             this.disposeSourceHandler();
-            this.off('dispose', this.disposeSourceHandler);
+            this.unlistenTo('dispose', this.disposeSourceHandler);
             if (sh !== _Tech.nativeSourceHandler) {
                 this.currentSource_ = source;
             }
             this.sourceHandler_ = sh.handleSource(source, this, this.options_);
-            this.one('dispose', this.disposeSourceHandler);
+            this.listenToOnce('dispose', this.disposeSourceHandler);
         };
         _Tech.prototype.disposeSourceHandler = function () {
             if (this.currentSource_) {

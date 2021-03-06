@@ -1,4 +1,7 @@
-define([],function(){
+define([
+  "skylark-langx-constructs/inherit"
+],function(inherit){
+  /*
   function _inherits(subClass, superClass) {
     if (typeof superClass !== "function" && superClass !== null) {
       throw new TypeError("Super expression must either be null or a function");
@@ -13,6 +16,9 @@ define([],function(){
     });
     if (superClass) Object.setPrototypeOf(subClass, superClass);
   }
-
+ 
   return _inherits;
+  */
+
+  return inherit;
 });

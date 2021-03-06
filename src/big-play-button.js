@@ -9,7 +9,7 @@ define([
         constructor(player, options) {
             super(player, options);
             this.mouseused_ = false;
-            this.on('mousedown', this.handleMouseDown);
+            this.listenTo('mousedown', this.handleMouseDown);
         }
         buildCSSClass() {
             return 'vjs-big-play-button';
