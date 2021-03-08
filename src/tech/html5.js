@@ -1,4 +1,5 @@
 define([
+    "skylark-langx",
     'skylark-langx-globals/document',
     './tech',
     '../utils/dom',
@@ -13,6 +14,7 @@ define([
     '../utils/define-lazy-property',
     '../utils/promise'
 ], function (
+    langx,
     document,
     Tech, 
     Dom, 
@@ -31,7 +33,58 @@ define([
     const NORMAL = TRACK_TYPES.NORMAL,
           REMOTE = TRACK_TYPES.REMOTE;
 
+    const NativeEvents = {
+            'abort' : 3,
+            'canplay' : 3,
+            'canplaythrough' : 3,
+            'disablepictureinpicturechanged':3,
+            'durationchange':3,
+            'emptied' : 3,
+            'ended':3,
+            'enterpictureinpicture':3,
+            'error' : 3,
+            'leavepictureinpicture':3,
+            'loadeddata' : 3,
+            'loadstart' : 3,
+            'loadedmetadata':3,
+            'pause' : 3,
+            'play':3,
+            'playing' : 3,
+            'posterchange':3,
+            'progress' : 3,
+            'ratechange':3,
+            'seeking' : 3,
+            'seeked' : 3,
+            'sourceset':3,
+            'stalled' : 3,
+            'suspend':3,
+            'textdata':3,
+            'texttrackchange':3,
+            'timeupdate':3,
+            'volumechange':3,
+            'waiting' : 3,
+
+    };
     class Html5 extends Tech {
+
+        isNativeEvent(events) {
+            var ret  = super.isNativeEvent(events);
+            if (ret) {
+                return true;
+            }
+            if (langx.isString(events)) {
+                return !!NativeEvents[events];
+            } else if (langx.isArray(events)) {
+                for (var i=0; i<events.length; i++) {
+                    if (NativeEvents[events[i]]) {
+                        return true;
+                    }
+                }
+                return false;
+            }            
+
+        } 
+
         constructor(options, ready) {
             super(options, ready);
             const source = options.source;

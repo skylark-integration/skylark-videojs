@@ -1,7 +1,7 @@
 define([
-    '../event-target',
-    '../mixins/evented'
-], function (EventTarget, evented) {
+    '../event-target'
+    ///'../mixins/evented'
+], function (EventTarget) {
     'use strict';
     class TrackList extends EventTarget {
         constructor(tracks = []) {
@@ -40,7 +40,8 @@ define([
                     target: this
                 });
             };
-            if (evented.isEvented(track)) {
+            ///if (evented.isEvented(track)) {
+            if (track.addEventListener) {
                 track.addEventListener('labelchange', track.labelchange_);
             }
         }

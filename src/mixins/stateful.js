@@ -1,7 +1,7 @@
 define([
-    './evented',
+    ///'./evented',
     '../utils/obj'
-], function (evented, Obj) {
+], function (Obj) {
     'use strict';
     const StatefulMixin = {
         state: {},
@@ -20,7 +20,8 @@ define([
                 }
                 this.state[key] = value;
             });
-            if (changes && evented.isEvented(this)) {
+            //if (changes && evented.isEvented(this)) {
+            if (changes && this.trigger) {
                 this.trigger({
                     changes,
                     type: 'statechanged'
@@ -32,7 +33,8 @@ define([
     function stateful(target, defaultState) {
         Obj.assign(target, StatefulMixin);
         target.state = Obj.assign({}, target.state, defaultState);
-        if (typeof target.handleStateChanged === 'function' && evented.isEvented(target)) {
+        ///if (typeof target.handleStateChanged === 'function' && evented.isEvented(target)) {
+        if (typeof target.handleStateChanged === 'function' && target.on) {
             target.on('statechanged', target.handleStateChanged);
         }
         return target;

@@ -1658,6 +1658,24 @@ define('skylark-langx-funcs/template',[
     return funcs.template = template;
 
 });
+define('skylark-langx-funcs/throttle',[
+  "./funcs"
+],function(funcs){
+
+    const throttle = function (fn, wait) {
+        let last = window.performance.now();
+        const throttled = function (...args) {
+            const now = window.performance.now();
+            if (now - last >= wait) {
+                fn(...args);
+                last = now;
+            }
+        };
+        return throttled;
+    };
+
+    return funcs.throttle = throttle;
+});
 define('skylark-langx-funcs/main',[
 	"./funcs",
 	"./debounce",
@@ -1666,7 +1684,8 @@ define('skylark-langx-funcs/main',[
 	"./loop",
 	"./negate",
 	"./proxy",
-	"./template"
+	"./template",
+	"./throttle"
 ],function(funcs){
 	return funcs;
 });
@@ -1962,12 +1981,50 @@ define('skylark-langx-events/events',[
 ],function(skylark){
 	return skylark.attach("langx.events",{});
 });
-define('skylark-langx-klass/klass',[
+define('skylark-langx-constructs/constructs',[
+  "skylark-langx-ns"
+],function(skylark){
+
+    return skylark.attach("langx.constructs",{});
+});
+define('skylark-langx-constructs/inherit',[
+	"./constructs"
+],function(constructs){
+
+    function inherit(ctor,base) {
+        ///var f = function() {};
+        ///f.prototype = base.prototype;
+        ///
+        ///ctor.prototype = new f();
+
+	    if ((typeof base !== "function") && base) {
+	      throw new TypeError("Super expression must either be null or a function");
+	    }
+
+	    ctor.prototype = Object.create(base && base.prototype, {
+	      constructor: {
+	        value: ctor,
+	        writable: true,
+	        configurable: true
+	      }
+	    });
+
+	    if (base) {
+	    	//tor.__proto__ = base;
+	    	Object.setPrototypeOf(ctor, base);
+	    } 
+    }
+
+    return constructs.inherit = inherit
+});
+define('skylark-langx-constructs/klass',[
   "skylark-langx-ns",
   "skylark-langx-types",
   "skylark-langx-objects",
   "skylark-langx-arrays",
-],function(skylark,types,objects,arrays){
+  "./constructs",
+  "./inherit"
+],function(skylark,types,objects,arrays,constructs,inherit){
     var uniq = arrays.uniq,
         has = objects.has,
         mixin = objects.mixin,
@@ -2020,12 +2077,7 @@ let longEar = klass({
 },rabbit);
 */
     
-    function inherit(ctor, base) {
-        var f = function() {};
-        f.prototype = base.prototype;
 
-        ctor.prototype = new f();
-    }
 
     var f1 = function() {
         function extendClass(ctor, props, options) {
@@ -2118,8 +2170,10 @@ let longEar = klass({
             var newCtor =ctor;
             for (var i=0;i<mixins.length;i++) {
                 var xtor = new Function();
-                xtor.prototype = Object.create(newCtor.prototype);
-                xtor.__proto__ = newCtor;
+
+                inherit(xtor,newCtor)
+                //xtor.prototype = Object.create(newCtor.prototype);
+                //xtor.__proto__ = newCtor;
                 xtor.superclass = null;
                 mixin(xtor.prototype,mixins[i].prototype);
                 xtor.prototype.__mixin__ = mixins[i];
@@ -2174,15 +2228,17 @@ let longEar = klass({
 
 
             // Populate our constructed prototype object
-            ctor.prototype = Object.create(innerParent.prototype);
+            ///ctor.prototype = Object.create(innerParent.prototype);
 
             // Enforce the constructor to be what we expect
-            ctor.prototype.constructor = ctor;
-            ctor.superclass = parent;
-
+            ///ctor.prototype.constructor = ctor;
+  
             // And make this class extendable
-            ctor.__proto__ = innerParent;
+            ///ctor.__proto__ = innerParent;
 
+            inherit(ctor,innerParent);
+
+            ctor.superclass = parent;
 
             if (!ctor._constructor) {
                 ctor._constructor = _constructor;
@@ -2211,7 +2267,15 @@ let longEar = klass({
 
     var createClass = f1();
 
-    return skylark.attach("langx.klass",createClass);
+    return constructs.klass = createClass;
+});
+define('skylark-langx-klass/klass',[
+  "skylark-langx-ns",
+  "skylark-langx-constructs/klass"
+],function(skylark,klass){
+
+
+    return skylark.attach("langx.klass",klass);
 });
 define('skylark-langx-klass/main',[
 	"./klass"
@@ -3151,6 +3215,8 @@ define('skylark-net-http/xhr',[
                                 result = xhr.response; // new Blob([xhr.response]);
                             } else if (dataType == "arraybuffer") {
                                 result = xhr.reponse;
+                            } else if (dataType == "text") {
+                                result = xhr.responseText;
                             }
                         } catch (e) { 
                             error = e;
@@ -3977,294 +4043,6 @@ define('skylark-langx/binary',[
 	"skylark-langx-binary"
 ],function(binary){
   return binary;
-});
-define('skylark-langx-constructs/constructs',[
-  "skylark-langx-ns"
-],function(skylark){
-
-    return skylark.attach("langx.constructs",{});
-});
-define('skylark-langx-constructs/inherit',[
-	"./constructs"
-],function(constructs){
-
-    function inherit(ctor,base) {
-        ///var f = function() {};
-        ///f.prototype = base.prototype;
-        ///
-        ///ctor.prototype = new f();
-
-	    if ((typeof base !== "function") && base) {
-	      throw new TypeError("Super expression must either be null or a function");
-	    }
-
-	    ctor.prototype = Object.create(base && base.prototype, {
-	      constructor: {
-	        value: ctor,
-	        writable: true,
-	        configurable: true
-	      }
-	    });
-
-	    if (base) {
-	    	//tor.__proto__ = base;
-	    	Object.setPrototypeOf(ctor, base);
-	    } 
-    }
-
-    return constructs.inherit = inherit
-});
-define('skylark-langx-constructs/klass',[
-  "skylark-langx-ns",
-  "skylark-langx-types",
-  "skylark-langx-objects",
-  "skylark-langx-arrays",
-  "./constructs",
-  "./inherit"
-],function(skylark,types,objects,arrays,constructs,inherit){
-    var uniq = arrays.uniq,
-        has = objects.has,
-        mixin = objects.mixin,
-        isArray = types.isArray,
-        isDefined = types.isDefined;
-
-/* for reference 
- function klass(props,parent) {
-    var ctor = function(){
-        this._construct();
-    };
-    ctor.prototype = props;
-    if (parent) {
-        ctor._proto_ = parent;
-        props.__proto__ = parent.prototype;
-    }
-    return ctor;
-}
-
-// Type some JavaScript code here.
-let animal = klass({
-  _construct(){
-      this.name = this.name + ",hi";
-  },
-    
-  name: "Animal",
-  eat() {         // [[HomeObject]] == animal
-    alert(`${this.name} eats.`);
-  }
-    
-    
-});
-
-
-let rabbit = klass({
-  name: "Rabbit",
-  _construct(){
-      super._construct();
-  },
-  eat() {         // [[HomeObject]] == rabbit
-    super.eat();
-  }
-},animal);
-
-let longEar = klass({
-  name: "Long Ear",
-  eat() {         // [[HomeObject]] == longEar
-    super.eat();
-  }
-},rabbit);
-*/
-    
-
-
-    var f1 = function() {
-        function extendClass(ctor, props, options) {
-            // Copy the properties to the prototype of the class.
-            var proto = ctor.prototype,
-                _super = ctor.superclass.prototype,
-                noOverrided = options && options.noOverrided,
-                overrides = options && options.overrides || {};
-
-            for (var name in props) {
-                if (name === "constructor") {
-                    continue;
-                }
-
-                // Check if we're overwriting an existing function
-                var prop = props[name];
-                if (typeof props[name] == "function") {
-                    proto[name] =  !prop._constructor && !noOverrided && typeof _super[name] == "function" ?
-                          (function(name, fn, superFn) {
-                            return function() {
-                                var tmp = this.overrided;
-
-                                // Add a new ._super() method that is the same method
-                                // but on the super-class
-                                this.overrided = superFn;
-
-                                // The method only need to be bound temporarily, so we
-                                // remove it when we're done executing
-                                var ret = fn.apply(this, arguments);
-
-                                this.overrided = tmp;
-
-                                return ret;
-                            };
-                        })(name, prop, _super[name]) :
-                        prop;
-                } else if (types.isPlainObject(prop) && prop!==null && (prop.get)) {
-                    Object.defineProperty(proto,name,prop);
-                } else {
-                    proto[name] = prop;
-                }
-            }
-            return ctor;
-        }
-
-        function serialMixins(ctor,mixins) {
-            var result = [];
-
-            mixins.forEach(function(mixin){
-                if (has(mixin,"__mixins__")) {
-                     throw new Error("nested mixins");
-                }
-                var clss = [];
-                while (mixin) {
-                    clss.unshift(mixin);
-                    mixin = mixin.superclass;
-                }
-                result = result.concat(clss);
-            });
-
-            result = uniq(result);
-
-            result = result.filter(function(mixin){
-                var cls = ctor;
-                while (cls) {
-                    if (mixin === cls) {
-                        return false;
-                    }
-                    if (has(cls,"__mixins__")) {
-                        var clsMixines = cls["__mixins__"];
-                        for (var i=0; i<clsMixines.length;i++) {
-                            if (clsMixines[i]===mixin) {
-                                return false;
-                            }
-                        }
-                    }
-                    cls = cls.superclass;
-                }
-                return true;
-            });
-
-            if (result.length>0) {
-                return result;
-            } else {
-                return false;
-            }
-        }
-
-        function mergeMixins(ctor,mixins) {
-            var newCtor =ctor;
-            for (var i=0;i<mixins.length;i++) {
-                var xtor = new Function();
-
-                inherit(xtor,newCtor)
-                //xtor.prototype = Object.create(newCtor.prototype);
-                //xtor.__proto__ = newCtor;
-                xtor.superclass = null;
-                mixin(xtor.prototype,mixins[i].prototype);
-                xtor.prototype.__mixin__ = mixins[i];
-                newCtor = xtor;
-            }
-
-            return newCtor;
-        }
-
-        function _constructor ()  {
-            if (this._construct) {
-                return this._construct.apply(this, arguments);
-            } else  if (this.init) {
-                return this.init.apply(this, arguments);
-            }
-        }
-
-        return function createClass(props, parent, mixins,options) {
-            if (isArray(parent)) {
-                options = mixins;
-                mixins = parent;
-                parent = null;
-            }
-            parent = parent || Object;
-
-            if (isDefined(mixins) && !isArray(mixins)) {
-                options = mixins;
-                mixins = false;
-            }
-
-            var innerParent = parent;
-
-            if (mixins) {
-                mixins = serialMixins(innerParent,mixins);
-            }
-
-            if (mixins) {
-                innerParent = mergeMixins(innerParent,mixins);
-            }
-
-            var klassName = props.klassName || "",
-                ctor = new Function(
-                    "return function " + klassName + "() {" +
-                    "var inst = this," +
-                    " ctor = arguments.callee;" +
-                    "if (!(inst instanceof ctor)) {" +
-                    "inst = Object.create(ctor.prototype);" +
-                    "}" +
-                    "return ctor._constructor.apply(inst, arguments) || inst;" + 
-                    "}"
-                )();
-
-
-            // Populate our constructed prototype object
-            ///ctor.prototype = Object.create(innerParent.prototype);
-
-            // Enforce the constructor to be what we expect
-            ///ctor.prototype.constructor = ctor;
-  
-            // And make this class extendable
-            ///ctor.__proto__ = innerParent;
-
-            inherit(ctor,innerParent);
-
-            ctor.superclass = parent;
-
-            if (!ctor._constructor) {
-                ctor._constructor = _constructor;
-            } 
-
-            if (mixins) {
-                ctor.__mixins__ = mixins;
-            }
-
-            if (!ctor.partial) {
-                ctor.partial = function(props, options) {
-                    return extendClass(this, props, options);
-                };
-            }
-            if (!ctor.inherit) {
-                ctor.inherit = function(props, mixins,options) {
-                    return createClass(props, this, mixins,options);
-                };
-            }
-
-            ctor.partial(props, options);
-
-            return ctor;
-        };
-    }
-
-    var createClass = f1();
-
-    return constructs.klass = createClass;
 });
 define('skylark-langx-constructs/main',[
 	"./constructs",
@@ -11340,6 +11118,7 @@ define('skylark-domx-noder/noder',[
         slice = Array.prototype.slice;
 
 
+
     function normalizeContent(content) {
         if (typeof content === 'function') {
             content = content();
@@ -15827,22 +15606,30 @@ define('skylark-domx-eventer/eventer',[
             "selectionchange": 3, // Event
             "submit": 3, // Event
             "reset": 3, // Event
-            'loadstart' : 3,
-            'sourceset':3,
-            'waiting' : 3,
-            'ended':3,
-            'seeking' : 3,
-            'play':3,
-            'pause' : 3,
-            'durationchange':3,
             'fullscreenchange':3,
             'fullscreenerror':3,
+
+/*
+            'disablepictureinpicturechanged':3,
+            'ended':3,
             'enterpictureinpicture':3,
+            'durationchange':3,
             'leavepictureinpicture':3,
+            'loadstart' : 3,
             'loadedmetadata':3,
+            'pause' : 3,
+            'play':3,
             'posterchange':3,
-            'textdata':3,
             'ratechange':3,
+            'seeking' : 3,
+            'sourceset':3,
+            'suspend':3,
+            'textdata':3,
+            'texttrackchange':3,
+            'timeupdate':3,
+            'volumechange':3,
+            'waiting' : 3,
+*/
 
 
             "focus": 4, // FocusEvent
@@ -20015,8 +19802,9 @@ define('skylark-videojs/utils/obj',[
     };
 });
 define('skylark-videojs/utils/computed-style',[
-    'skylark-langx-globals/window'
-], function (window) {
+    'skylark-langx-globals/window',
+    'skylark-domx-styler'
+], function (window,styler) {
     'use strict';
     function computedStyle(el, prop) {
         if (!el || !prop) {
@@ -20028,7 +19816,9 @@ define('skylark-videojs/utils/computed-style',[
         }
         return '';
     }
-    return computedStyle;
+    ///return computedStyle;
+    return styler.css;
+
 });
 define('skylark-videojs/utils/browser',[
     "skylark-langx-globals/window",
@@ -21219,6 +21009,8 @@ define('skylark-net-http/Xhr',[
                                 result = xhr.response; // new Blob([xhr.response]);
                             } else if (dataType == "arraybuffer") {
                                 result = xhr.reponse;
+                            } else if (dataType == "text") {
+                                result = xhr.responseText;
                             }
                         } catch (e) { 
                             error = e;
@@ -23405,6 +23197,49 @@ define('skylark-widgets-base/Widget',[
   return base.Widget = Widget;
 });
 
+define('skylark-videojs/mixins/stateful',[
+    ///'./evented',
+    '../utils/obj'
+], function (Obj) {
+    'use strict';
+    const StatefulMixin = {
+        state: {},
+        setState(stateUpdates) {
+            if (typeof stateUpdates === 'function') {
+                stateUpdates = stateUpdates();
+            }
+            let changes;
+            Obj.each(stateUpdates, (value, key) => {
+                if (this.state[key] !== value) {
+                    changes = changes || {};
+                    changes[key] = {
+                        from: this.state[key],
+                        to: value
+                    };
+                }
+                this.state[key] = value;
+            });
+            //if (changes && evented.isEvented(this)) {
+            if (changes && this.trigger) {
+                this.trigger({
+                    changes,
+                    type: 'statechanged'
+                });
+            }
+            return changes;
+        }
+    };
+    function stateful(target, defaultState) {
+        Obj.assign(target, StatefulMixin);
+        target.state = Obj.assign({}, target.state, defaultState);
+        ///if (typeof target.handleStateChanged === 'function' && evented.isEvented(target)) {
+        if (typeof target.handleStateChanged === 'function' && target.on) {
+            target.on('statechanged', target.handleStateChanged);
+        }
+        return target;
+    }
+    return stateful;
+});
 define('skylark-videojs/utils/guid',[],function () {
     'use strict';
     const _initialGuid = 3;
@@ -23463,285 +23298,10 @@ define('skylark-videojs/utils/dom-data',[
     }
     return window.WeakMap ? new WeakMap() : new FakeWeakMap();
 });
-define('skylark-videojs/utils/events',[
-    'skylark-langx-globals/document',
-    "skylark-domx",
-    './dom-data',
-    './guid',
-    './log'
-], function (document, domx, DomData, Guid, log) {
-    'use strict';
-    function _cleanUpEvents(elem, type) {
-        if (!DomData.has(elem)) {
-            return;
-        }
-        const data = DomData.get(elem);
-        if (data.handlers[type].length === 0) {
-            delete data.handlers[type];
-            if (elem.removeEventListener) {
-                elem.removeEventListener(type, data.dispatcher, false);
-            } else if (elem.detachEvent) {
-                elem.detachEvent('on' + type, data.dispatcher);
-            }
-        }
-        if (Object.getOwnPropertyNames(data.handlers).length <= 0) {
-            delete data.handlers;
-            delete data.dispatcher;
-            delete data.disabled;
-        }
-        if (Object.getOwnPropertyNames(data).length === 0) {
-            DomData.delete(elem);
-        }
-    }
-    function _handleMultipleEvents(fn, elem, types, callback) {
-        types.forEach(function (type) {
-            fn(elem, type, callback);
-        });
-    }
-    function fixEvent(event) {
-        if (event.fixed_) {
-            return event;
-        }
-        function returnTrue() {
-            return true;
-        }
-        function returnFalse() {
-            return false;
-        }
-        if (!event || !event.isPropagationStopped) {
-            const old = event || window.event;
-            event = {};
-            for (const key in old) {
-                if (key !== 'layerX' && key !== 'layerY' && key !== 'keyLocation' && key !== 'webkitMovementX' && key !== 'webkitMovementY') {
-                    if (!(key === 'returnValue' && old.preventDefault)) {
-                        event[key] = old[key];
-                    }
-                }
-            }
-            if (!event.target) {
-                event.target = event.srcElement || document;
-            }
-            if (!event.relatedTarget) {
-                event.relatedTarget = event.fromElement === event.target ? event.toElement : event.fromElement;
-            }
-            event.preventDefault = function () {
-                if (old.preventDefault) {
-                    old.preventDefault();
-                }
-                event.returnValue = false;
-                old.returnValue = false;
-                event.defaultPrevented = true;
-            };
-            event.defaultPrevented = false;
-            event.stopPropagation = function () {
-                if (old.stopPropagation) {
-                    old.stopPropagation();
-                }
-                event.cancelBubble = true;
-                old.cancelBubble = true;
-                event.isPropagationStopped = returnTrue;
-            };
-            event.isPropagationStopped = returnFalse;
-            event.stopImmediatePropagation = function () {
-                if (old.stopImmediatePropagation) {
-                    old.stopImmediatePropagation();
-                }
-                event.isImmediatePropagationStopped = returnTrue;
-                event.stopPropagation();
-            };
-            event.isImmediatePropagationStopped = returnFalse;
-            if (event.clientX !== null && event.clientX !== undefined) {
-                const doc = document.documentElement;
-                const body = document.body;
-                event.pageX = event.clientX + (doc && doc.scrollLeft || body && body.scrollLeft || 0) - (doc && doc.clientLeft || body && body.clientLeft || 0);
-                event.pageY = event.clientY + (doc && doc.scrollTop || body && body.scrollTop || 0) - (doc && doc.clientTop || body && body.clientTop || 0);
-            }
-            event.which = event.charCode || event.keyCode;
-            if (event.button !== null && event.button !== undefined) {
-                event.button = event.button & 1 ? 0 : event.button & 4 ? 1 : event.button & 2 ? 2 : 0;
-            }
-        }
-        event.fixed_ = true;
-        return event;
-    }
-    let _supportsPassive;
-    const supportsPassive = function () {
-        if (typeof _supportsPassive !== 'boolean') {
-            _supportsPassive = false;
-            try {
-                const opts = Object.defineProperty({}, 'passive', {
-                    get() {
-                        _supportsPassive = true;
-                    }
-                });
-                window.addEventListener('test', null, opts);
-                window.removeEventListener('test', null, opts);
-            } catch (e) {
-            }
-        }
-        return _supportsPassive;
-    };
-    const passiveEvents = [
-        'touchstart',
-        'touchmove'
-    ];
-    function on(elem, type, fn) {
-        if (Array.isArray(type)) {
-            return _handleMultipleEvents(on, elem, type, fn);
-        }
-        if (!DomData.has(elem)) {
-            DomData.set(elem, {});
-        }
-        const data = DomData.get(elem);
-        if (!data.handlers) {
-            data.handlers = {};
-        }
-        if (!data.handlers[type]) {
-            data.handlers[type] = [];
-        }
-        if (!fn.guid) {
-            fn.guid = Guid.newGUID();
-        }
-        data.handlers[type].push(fn);
-        if (!data.dispatcher) {
-            data.disabled = false;
-            data.dispatcher = function (event, hash) {
-                if (data.disabled) {
-                    return;
-                }
-                event = fixEvent(event);
-                const handlers = data.handlers[event.type];
-                if (handlers) {
-                    const handlersCopy = handlers.slice(0);
-                    for (let m = 0, n = handlersCopy.length; m < n; m++) {
-                        if (event.isImmediatePropagationStopped()) {
-                            break;
-                        } else {
-                            try {
-                                handlersCopy[m].call(elem, event, hash);
-                            } catch (e) {
-                                log.error(e);
-                            }
-                        }
-                    }
-                }
-            };
-        }
-        if (data.handlers[type].length === 1) {
-            if (elem.addEventListener) {
-                let options = false;
-                if (supportsPassive() && passiveEvents.indexOf(type) > -1) {
-                    options = { passive: true };
-                }
-                elem.addEventListener(type, data.dispatcher, options);
-            } else if (elem.attachEvent) {
-                elem.attachEvent('on' + type, data.dispatcher);
-            }
-        }
-    }
-    function off(elem, type, fn) {
-        if (!DomData.has(elem)) {
-            return;
-        }
-        const data = DomData.get(elem);
-        if (!data.handlers) {
-            return;
-        }
-        if (Array.isArray(type)) {
-            return _handleMultipleEvents(off, elem, type, fn);
-        }
-        const removeType = function (el, t) {
-            data.handlers[t] = [];
-            _cleanUpEvents(el, t);
-        };
-        if (type === undefined) {
-            for (const t in data.handlers) {
-                if (Object.prototype.hasOwnProperty.call(data.handlers || {}, t)) {
-                    removeType(elem, t);
-                }
-            }
-            return;
-        }
-        const handlers = data.handlers[type];
-        if (!handlers) {
-            return;
-        }
-        if (!fn) {
-            removeType(elem, type);
-            return;
-        }
-        if (fn.guid) {
-            for (let n = 0; n < handlers.length; n++) {
-                if (handlers[n].guid === fn.guid) {
-                    handlers.splice(n--, 1);
-                }
-            }
-        }
-        _cleanUpEvents(elem, type);
-    }
-    function trigger(elem, event, hash) {
-        const elemData = DomData.has(elem) ? DomData.get(elem) : {};
-        const parent = elem.parentNode || elem.ownerDocument;
-        if (typeof event === 'string') {
-            event = {
-                type: event,
-                target: elem
-            };
-        } else if (!event.target) {
-            event.target = elem;
-        }
-        event = fixEvent(event);
-        if (elemData.dispatcher) {
-            elemData.dispatcher.call(elem, event, hash);
-        }
-        if (parent && !event.isPropagationStopped() && event.bubbles === true) {
-            trigger.call(null, parent, event, hash);
-        } else if (!parent && !event.defaultPrevented && event.target && event.target[event.type]) {
-            if (!DomData.has(event.target)) {
-                DomData.set(event.target, {});
-            }
-            const targetData = DomData.get(event.target);
-            if (event.target[event.type]) {
-                targetData.disabled = true;
-                if (typeof event.target[event.type] === 'function') {
-                    event.target[event.type]();
-                }
-                targetData.disabled = false;
-            }
-        }
-        return !event.defaultPrevented;
-    }
-    function one(elem, type, fn) {
-        if (Array.isArray(type)) {
-            return _handleMultipleEvents(one, elem, type, fn);
-        }
-        const func = function () {
-            off(elem, type, func);
-            fn.apply(this, arguments);
-        };
-        func.guid = fn.guid = fn.guid || Guid.newGUID();
-        on(elem, type, func);
-    }
-    function any(elem, type, fn) {
-        const func = function () {
-            off(elem, type, func);
-            fn.apply(this, arguments);
-        };
-        func.guid = fn.guid = fn.guid || Guid.newGUID();
-        on(elem, type, func);
-    }
-    return {
-        fixEvent: fixEvent,
-        on: domx.eventer.on, //on,
-        off: domx.eventer.off, //off,
-        trigger: domx.eventer.trigger, //trigger,
-        one: domx.eventer.one, //one,
-        any: domx.eventer.one //any
-    };
-});
 define('skylark-videojs/utils/fn',[
+    'skylark-langx-funcs',
     './guid'
-], function (GUID) {
+], function (funcs,GUID) {
     'use strict';
     const UPDATE_REFRESH_INTERVAL = 30;
     const bind = function (context, fn, uid) {
@@ -23791,326 +23351,9 @@ define('skylark-videojs/utils/fn',[
     return {
         UPDATE_REFRESH_INTERVAL: UPDATE_REFRESH_INTERVAL,
         bind: bind,
-        throttle: throttle,
-        debounce: debounce
+        throttle: funcs.throttle, //throttle,
+        debounce: funcs.debounce //debounce
     };
-});
-define('skylark-videojs/event-target',[
-    "skylark-langx-events/Emitter",
-    './utils/events'
-], function (Emitter,Events) {
-    'use strict';
-
-    /*
-    const EventTarget = function () {
-    };
-    EventTarget.prototype.allowedEvents_ = {};
-    EventTarget.prototype.on = function (type, fn) {
-        const ael = this.addEventListener;
-        this.addEventListener = () => {
-        };
-        Events.on(this, type, fn);
-        this.addEventListener = ael;
-    };
-    EventTarget.prototype.addEventListener = EventTarget.prototype.on;
-    EventTarget.prototype.off = function (type, fn) {
-        Events.off(this, type, fn);
-    };
-    EventTarget.prototype.removeEventListener = EventTarget.prototype.off;
-    EventTarget.prototype.one = function (type, fn) {
-        const ael = this.addEventListener;
-        this.addEventListener = () => {
-        };
-        Events.one(this, type, fn);
-        this.addEventListener = ael;
-    };
-    EventTarget.prototype.any = function (type, fn) {
-        const ael = this.addEventListener;
-        this.addEventListener = () => {
-        };
-        Events.any(this, type, fn);
-        this.addEventListener = ael;
-    };
-    EventTarget.prototype.trigger = function (event) {
-        const type = event.type || event;
-        if (typeof event === 'string') {
-            event = { type };
-        }
-        event = Events.fixEvent(event);
-        if (this.allowedEvents_[type] && this['on' + type]) {
-            this['on' + type](event);
-        }
-        Events.trigger(this, event);
-    };
-    EventTarget.prototype.dispatchEvent = EventTarget.prototype.trigger;
-
-    */
-
-    var EventTarget = Emitter.inherit({});
-    EventTarget.prototype.addEventListener = EventTarget.prototype.on;
-    EventTarget.prototype.dispatchEvent = EventTarget.prototype.trigger;
-    EventTarget.prototype.removeEventListener = EventTarget.prototype.off;
-    EventTarget.prototype.any = EventTarget.prototype.one;
-
-    let EVENT_MAP;
-    EventTarget.prototype.queueTrigger = function (event) {
-        if (!EVENT_MAP) {
-            EVENT_MAP = new Map();
-        }
-        const type = event.type || event;
-        let map = EVENT_MAP.get(this);
-        if (!map) {
-            map = new Map();
-            EVENT_MAP.set(this, map);
-        }
-        const oldTimeout = map.get(type);
-        map.delete(type);
-        window.clearTimeout(oldTimeout);
-        const timeout = window.setTimeout(() => {
-            if (map.size === 0) {
-                map = null;
-                EVENT_MAP.delete(this);
-            }
-            this.trigger(event);
-        }, 0);
-        map.set(type, timeout);
-    };
-
-    return EventTarget;
-});
-define('skylark-videojs/mixins/evented',[
-    '../utils/dom',
-    '../utils/events',
-    '../utils/fn',
-    '../utils/obj',
-    '../event-target',
-    '../utils/log'
-], function (Dom, Events, Fn, Obj, EventTarget, log) {
-    'use strict';
-    const objName = obj => {
-        if (typeof obj.name === 'function') {
-            return obj.name();
-        }
-        if (typeof obj.name === 'string') {
-            return obj.name;
-        }
-        if (obj.name_) {
-            return obj.name_;
-        }
-        if (obj.constructor && obj.constructor.name) {
-            return obj.constructor.name;
-        }
-        return typeof obj;
-    };
-    const isEvented = object => object instanceof EventTarget || !!object.eventBusEl_ && [
-        'on',
-        'one',
-        'off',
-        'trigger'
-    ].every(k => typeof object[k] === 'function');
-    const addEventedCallback = (target, callback) => {
-        if (isEvented(target)) {
-            callback();
-        } else {
-            if (!target.eventedCallbacks) {
-                target.eventedCallbacks = [];
-            }
-            target.eventedCallbacks.push(callback);
-        }
-    };
-    const isValidEventType = type => typeof type === 'string' && /\S/.test(type) || Array.isArray(type) && !!type.length;
-    const validateTarget = (target, obj, fnName) => {
-        if (!target || !target.nodeName && !isEvented(target)) {
-            throw new Error(`Invalid target for ${ objName(obj) }#${ fnName }; must be a DOM node or evented object.`);
-        }
-    };
-    const validateEventType = (type, obj, fnName) => {
-        if (!isValidEventType(type)) {
-            throw new Error(`Invalid event type for ${ objName(obj) }#${ fnName }; must be a non-empty string or array.`);
-        }
-    };
-    const validateListener = (listener, obj, fnName) => {
-        if (typeof listener !== 'function') {
-            throw new Error(`Invalid listener for ${ objName(obj) }#${ fnName }; must be a function.`);
-        }
-    };
-    const normalizeListenArgs = (self, args, fnName) => {
-        const isTargetingSelf = args.length < 3 || args[0] === self || args[0] === self.eventBusEl_;
-        let target;
-        let type;
-        let listener;
-        if (isTargetingSelf) {
-            target = self.eventBusEl_;
-            if (args.length >= 3) {
-                args.shift();
-            }
-            [type, listener] = args;
-        } else {
-            [target, type, listener] = args;
-        }
-        validateTarget(target, self, fnName);
-        validateEventType(type, self, fnName);
-        validateListener(listener, self, fnName);
-        listener = Fn.bind(self, listener);
-        return {
-            isTargetingSelf,
-            target,
-            type,
-            listener
-        };
-    };
-    const listen = (target, method, type, listener) => {
-        validateTarget(target, target, method);
-        if (target.nodeName) {
-            Events[method](target, type, listener);
-        } else {
-            target[method](type, listener);
-        }
-    };
-    const EventedMixin = {
-        on(...args) {
-            const {isTargetingSelf, target, type, listener} = normalizeListenArgs(this, args, 'on');
-            listen(target, 'on', type, listener);
-            if (!isTargetingSelf) {
-                const removeListenerOnDispose = () => this.unlistenTo(target, type, listener);
-                removeListenerOnDispose.guid = listener.guid;
-                const removeRemoverOnTargetDispose = () => this.unlistenTo('dispose', removeListenerOnDispose);
-                removeRemoverOnTargetDispose.guid = listener.guid;
-                listen(this, 'on', 'dispose', removeListenerOnDispose);
-                listen(target, 'on', 'dispose', removeRemoverOnTargetDispose);
-            }
-        },
-        one(...args) {
-            const {isTargetingSelf, target, type, listener} = normalizeListenArgs(this, args, 'one');
-            if (isTargetingSelf) {
-                listen(target, 'one', type, listener);
-            } else {
-                const wrapper = (...largs) => {
-                    this.unlistenTo(target, type, wrapper);
-                    listener.apply(null, largs);
-                };
-                wrapper.guid = listener.guid;
-                listen(target, 'one', type, wrapper);
-            }
-        },
-        any(...args) {
-            const {isTargetingSelf, target, type, listener} = normalizeListenArgs(this, args, 'any');
-            if (isTargetingSelf) {
-                listen(target, 'any', type, listener);
-            } else {
-                const wrapper = (...largs) => {
-                    this.unlistenTo(target, type, wrapper);
-                    listener.apply(null, largs);
-                };
-                wrapper.guid = listener.guid;
-                listen(target, 'any', type, wrapper);
-            }
-        },
-        off(targetOrType, typeOrListener, listener) {
-            if (!targetOrType || isValidEventType(targetOrType)) {
-                Events.off(this.eventBusEl_, targetOrType, typeOrListener);
-            } else {
-                const target = targetOrType;
-                const type = typeOrListener;
-                validateTarget(target, this, 'off');
-                validateEventType(type, this, 'off');
-                validateListener(listener, this, 'off');
-                listener = Fn.bind(this, listener);
-                this.unlistenTo('dispose', listener);
-                if (target.nodeName) {
-                    Events.off(target, type, listener);
-                    Events.off(target, 'dispose', listener);
-                } else if (isEvented(target)) {
-                    target.off(type, listener);
-                    target.off('dispose', listener);
-                }
-            }
-        },
-        trigger(event, hash) {
-            validateTarget(this.eventBusEl_, this, 'trigger');
-            const type = event && typeof event !== 'string' ? event.type : event;
-            if (!isValidEventType(type)) {
-                const error = `Invalid event type for ${ objName(this) }#trigger; ` + 'must be a non-empty string or object with a type key that has a non-empty value.';
-                if (event) {
-                    (this.log || log).error(error);
-                } else {
-                    throw new Error(error);
-                }
-            }
-            return Events.trigger(this.eventBusEl_, event, hash);
-        }
-    };
-    function evented(target, options = {}) {
-        const {eventBusKey} = options;
-        if (eventBusKey) {
-            if (!target[eventBusKey].nodeName) {
-                throw new Error(`The eventBusKey "${ eventBusKey }" does not refer to an element.`);
-            }
-            target.eventBusEl_ = target[eventBusKey];
-        } else {
-            target.eventBusEl_ = Dom.createEl('span', { className: 'vjs-event-bus' });
-        }
-        Obj.assign(target, EventedMixin);
-        if (target.eventedCallbacks) {
-            target.eventedCallbacks.forEach(callback => {
-                callback();
-            });
-        }
-        target.on('dispose', () => {
-            target.off();
-            window.setTimeout(() => {
-                target.eventBusEl_ = null;
-            }, 0);
-        });
-        return target;
-    }
-
-    evented.isEvented = isEvented;
-    evented.addEventedCallback = addEventedCallback;
-
-    return evented;
-    
-});
-define('skylark-videojs/mixins/stateful',[
-    './evented',
-    '../utils/obj'
-], function (evented, Obj) {
-    'use strict';
-    const StatefulMixin = {
-        state: {},
-        setState(stateUpdates) {
-            if (typeof stateUpdates === 'function') {
-                stateUpdates = stateUpdates();
-            }
-            let changes;
-            Obj.each(stateUpdates, (value, key) => {
-                if (this.state[key] !== value) {
-                    changes = changes || {};
-                    changes[key] = {
-                        from: this.state[key],
-                        to: value
-                    };
-                }
-                this.state[key] = value;
-            });
-            if (changes && evented.isEvented(this)) {
-                this.trigger({
-                    changes,
-                    type: 'statechanged'
-                });
-            }
-            return changes;
-        }
-    };
-    function stateful(target, defaultState) {
-        Obj.assign(target, StatefulMixin);
-        target.state = Obj.assign({}, target.state, defaultState);
-        if (typeof target.handleStateChanged === 'function' && evented.isEvented(target)) {
-            target.on('statechanged', target.handleStateChanged);
-        }
-        return target;
-    }
-    return stateful;
 });
 define('skylark-videojs/utils/string-cases',[],function () {
     'use strict';
@@ -24214,7 +23457,7 @@ define('skylark-videojs/component',[
     "skylark-langx",
     "skylark-domx-eventer",
     "skylark-widgets-base/Widget",
-    './mixins/evented',
+    ///'./mixins/evented',
     './mixins/stateful',
     './utils/dom',
     './utils/dom-data',
@@ -24225,11 +23468,123 @@ define('skylark-videojs/component',[
     './utils/computed-style',
     './utils/map',
     './utils/set'
-], function (langx,eventer,Widget,evented, stateful, Dom, DomData, Fn, Guid, stringCases, mergeOptions, computedStyle, Map, Set) {
+], function (langx,eventer,Widget, stateful, Dom, DomData, Fn, Guid, stringCases, mergeOptions, computedStyle, Map, Set) {
     'use strict';
+
+    function isNativeEvent(el,events) {
+        if (langx.isString(events)) {
+            return el["on"+ events] !== undefined;
+        } else if (langx.isArray(events)) {
+            for (var i=0; i<events.length; i++) {
+                if (el["on"+ events[i]] !== undefined) {
+                    return true;
+                }
+            }
+            return events.length > 0;
+        }
+    }
+
+    const NativeEvents = {
+            "drag": 2, // DragEvent
+            "dragend": 2, // DragEvent
+            "dragenter": 2, // DragEvent
+            "dragexit": 2, // DragEvent
+            "dragleave": 2, // DragEvent
+            "dragover": 2, // DragEvent
+            "dragstart": 2, // DragEvent
+            "drop": 2, // DragEvent
+
+            "abort": 3, // Event
+            "change": 3, // Event
+            "error": 3, // Event
+            "selectionchange": 3, // Event
+            "submit": 3, // Event
+            "reset": 3, // Event
+            'fullscreenchange':3,
+            'fullscreenerror':3,
+
+/*
+            'disablepictureinpicturechanged':3,
+            'ended':3,
+            'enterpictureinpicture':3,
+            'durationchange':3,
+            'leavepictureinpicture':3,
+            'loadstart' : 3,
+            'loadedmetadata':3,
+            'pause' : 3,
+            'play':3,
+            'posterchange':3,
+            'ratechange':3,
+            'seeking' : 3,
+            'sourceset':3,
+            'suspend':3,
+            'textdata':3,
+            'texttrackchange':3,
+            'timeupdate':3,
+            'volumechange':3,
+            'waiting' : 3,
+*/
+
+
+            "focus": 4, // FocusEvent
+            "blur": 4, // FocusEvent
+            "focusin": 4, // FocusEvent
+            "focusout": 4, // FocusEvent
+
+            "keydown": 5, // KeyboardEvent
+            "keypress": 5, // KeyboardEvent
+            "keyup": 5, // KeyboardEvent
+
+            "message": 6, // MessageEvent
+
+            "click": 7, // MouseEvent
+            "contextmenu": 7, // MouseEvent
+            "dblclick": 7, // MouseEvent
+            "mousedown": 7, // MouseEvent
+            "mouseup": 7, // MouseEvent
+            "mousemove": 7, // MouseEvent
+            "mouseover": 7, // MouseEvent
+            "mouseout": 7, // MouseEvent
+            "mouseenter": 7, // MouseEvent
+            "mouseleave": 7, // MouseEvent
+
+
+            "progress" : 11, //ProgressEvent
+
+            "textInput": 12, // TextEvent
+
+            "tap": 13,
+            "touchstart": 13, // TouchEvent
+            "touchmove": 13, // TouchEvent
+            "touchend": 13, // TouchEvent
+
+            "load": 14, // UIEvent
+            "resize": 14, // UIEvent
+            "select": 14, // UIEvent
+            "scroll": 14, // UIEvent
+            "unload": 14, // UIEvent,
+
+            "wheel": 15, // WheelEvent
+
+    };
+
     class Component extends Widget {
+        isNativeEvent(events) {
+            if (langx.isString(events)) {
+                return !!NativeEvents[events];
+            } else if (langx.isArray(events)) {
+                for (var i=0; i<events.length; i++) {
+                    if (NativeEvents[events[i]]) {
+                        return true;
+                    }
+                }
+                return false;
+            }            
+
+        }   
+
         on(events, selector, data, callback, ctx, /*used internally*/ one) {
-            if (this.el_ && eventer.isNativeEvent(events)) {
+            if (this.el_ && this.isNativeEvent(events)) {
                 eventer.on(this.el_,events,selector,data,callback,ctx,one);
             } else {
                 super.on(events, selector, data, callback, ctx,  one);
@@ -24237,7 +23592,7 @@ define('skylark-videojs/component',[
         }   
 
         off(events, callback) {
-            if (this.el_ && eventer.isNativeEvent(events)) {
+            if (this.el_ && this.isNativeEvent(events)) {
                 eventer.off(this.el_,events,callback);
             } else {
                 super.off(events,callback);
@@ -24249,7 +23604,7 @@ define('skylark-videojs/component',[
                 one = callback;
                 callback = event;
                 event = obj;
-                if (this.el_ && eventer.isNativeEvent(event)) {
+                if (this.el_ && this.isNativeEvent(event)) {
                     eventer.on(this.el_,event,callback,this,one);
                 } else {
                     this.on(event,callback,this,one);
@@ -24267,7 +23622,7 @@ define('skylark-videojs/component',[
             if (langx.isString(obj) || langx.isArray(obj)) {
                 callback = event;
                 event = obj;
-                if (this.el_ && eventer.isNativeEvent(event)) {
+                if (this.el_ && this.isNativeEvent(event)) {
                     eventer.off(this.el_,event,callback);
                 } else {
                     this.off(event,callback);                   
@@ -24947,6 +24302,365 @@ define('skylark-videojs/component',[
     Component.registerComponent('Component', Component);
     return Component;
 });
+define('skylark-videojs/utils/events',[
+    'skylark-langx-globals/document',
+    "skylark-domx",
+    './dom-data',
+    './guid',
+    './log'
+], function (document, domx, DomData, Guid, log) {
+    'use strict';
+    function _cleanUpEvents(elem, type) {
+        if (!DomData.has(elem)) {
+            return;
+        }
+        const data = DomData.get(elem);
+        if (data.handlers[type].length === 0) {
+            delete data.handlers[type];
+            if (elem.removeEventListener) {
+                elem.removeEventListener(type, data.dispatcher, false);
+            } else if (elem.detachEvent) {
+                elem.detachEvent('on' + type, data.dispatcher);
+            }
+        }
+        if (Object.getOwnPropertyNames(data.handlers).length <= 0) {
+            delete data.handlers;
+            delete data.dispatcher;
+            delete data.disabled;
+        }
+        if (Object.getOwnPropertyNames(data).length === 0) {
+            DomData.delete(elem);
+        }
+    }
+    function _handleMultipleEvents(fn, elem, types, callback) {
+        types.forEach(function (type) {
+            fn(elem, type, callback);
+        });
+    }
+    function fixEvent(event) {
+        if (event.fixed_) {
+            return event;
+        }
+        function returnTrue() {
+            return true;
+        }
+        function returnFalse() {
+            return false;
+        }
+        if (!event || !event.isPropagationStopped) {
+            const old = event || window.event;
+            event = {};
+            for (const key in old) {
+                if (key !== 'layerX' && key !== 'layerY' && key !== 'keyLocation' && key !== 'webkitMovementX' && key !== 'webkitMovementY') {
+                    if (!(key === 'returnValue' && old.preventDefault)) {
+                        event[key] = old[key];
+                    }
+                }
+            }
+            if (!event.target) {
+                event.target = event.srcElement || document;
+            }
+            if (!event.relatedTarget) {
+                event.relatedTarget = event.fromElement === event.target ? event.toElement : event.fromElement;
+            }
+            event.preventDefault = function () {
+                if (old.preventDefault) {
+                    old.preventDefault();
+                }
+                event.returnValue = false;
+                old.returnValue = false;
+                event.defaultPrevented = true;
+            };
+            event.defaultPrevented = false;
+            event.stopPropagation = function () {
+                if (old.stopPropagation) {
+                    old.stopPropagation();
+                }
+                event.cancelBubble = true;
+                old.cancelBubble = true;
+                event.isPropagationStopped = returnTrue;
+            };
+            event.isPropagationStopped = returnFalse;
+            event.stopImmediatePropagation = function () {
+                if (old.stopImmediatePropagation) {
+                    old.stopImmediatePropagation();
+                }
+                event.isImmediatePropagationStopped = returnTrue;
+                event.stopPropagation();
+            };
+            event.isImmediatePropagationStopped = returnFalse;
+            if (event.clientX !== null && event.clientX !== undefined) {
+                const doc = document.documentElement;
+                const body = document.body;
+                event.pageX = event.clientX + (doc && doc.scrollLeft || body && body.scrollLeft || 0) - (doc && doc.clientLeft || body && body.clientLeft || 0);
+                event.pageY = event.clientY + (doc && doc.scrollTop || body && body.scrollTop || 0) - (doc && doc.clientTop || body && body.clientTop || 0);
+            }
+            event.which = event.charCode || event.keyCode;
+            if (event.button !== null && event.button !== undefined) {
+                event.button = event.button & 1 ? 0 : event.button & 4 ? 1 : event.button & 2 ? 2 : 0;
+            }
+        }
+        event.fixed_ = true;
+        return event;
+    }
+    let _supportsPassive;
+    const supportsPassive = function () {
+        if (typeof _supportsPassive !== 'boolean') {
+            _supportsPassive = false;
+            try {
+                const opts = Object.defineProperty({}, 'passive', {
+                    get() {
+                        _supportsPassive = true;
+                    }
+                });
+                window.addEventListener('test', null, opts);
+                window.removeEventListener('test', null, opts);
+            } catch (e) {
+            }
+        }
+        return _supportsPassive;
+    };
+    const passiveEvents = [
+        'touchstart',
+        'touchmove'
+    ];
+    function on(elem, type, fn) {
+        if (Array.isArray(type)) {
+            return _handleMultipleEvents(on, elem, type, fn);
+        }
+        if (!DomData.has(elem)) {
+            DomData.set(elem, {});
+        }
+        const data = DomData.get(elem);
+        if (!data.handlers) {
+            data.handlers = {};
+        }
+        if (!data.handlers[type]) {
+            data.handlers[type] = [];
+        }
+        if (!fn.guid) {
+            fn.guid = Guid.newGUID();
+        }
+        data.handlers[type].push(fn);
+        if (!data.dispatcher) {
+            data.disabled = false;
+            data.dispatcher = function (event, hash) {
+                if (data.disabled) {
+                    return;
+                }
+                event = fixEvent(event);
+                const handlers = data.handlers[event.type];
+                if (handlers) {
+                    const handlersCopy = handlers.slice(0);
+                    for (let m = 0, n = handlersCopy.length; m < n; m++) {
+                        if (event.isImmediatePropagationStopped()) {
+                            break;
+                        } else {
+                            try {
+                                handlersCopy[m].call(elem, event, hash);
+                            } catch (e) {
+                                log.error(e);
+                            }
+                        }
+                    }
+                }
+            };
+        }
+        if (data.handlers[type].length === 1) {
+            if (elem.addEventListener) {
+                let options = false;
+                if (supportsPassive() && passiveEvents.indexOf(type) > -1) {
+                    options = { passive: true };
+                }
+                elem.addEventListener(type, data.dispatcher, options);
+            } else if (elem.attachEvent) {
+                elem.attachEvent('on' + type, data.dispatcher);
+            }
+        }
+    }
+    function off(elem, type, fn) {
+        if (!DomData.has(elem)) {
+            return;
+        }
+        const data = DomData.get(elem);
+        if (!data.handlers) {
+            return;
+        }
+        if (Array.isArray(type)) {
+            return _handleMultipleEvents(off, elem, type, fn);
+        }
+        const removeType = function (el, t) {
+            data.handlers[t] = [];
+            _cleanUpEvents(el, t);
+        };
+        if (type === undefined) {
+            for (const t in data.handlers) {
+                if (Object.prototype.hasOwnProperty.call(data.handlers || {}, t)) {
+                    removeType(elem, t);
+                }
+            }
+            return;
+        }
+        const handlers = data.handlers[type];
+        if (!handlers) {
+            return;
+        }
+        if (!fn) {
+            removeType(elem, type);
+            return;
+        }
+        if (fn.guid) {
+            for (let n = 0; n < handlers.length; n++) {
+                if (handlers[n].guid === fn.guid) {
+                    handlers.splice(n--, 1);
+                }
+            }
+        }
+        _cleanUpEvents(elem, type);
+    }
+    function trigger(elem, event, hash) {
+        const elemData = DomData.has(elem) ? DomData.get(elem) : {};
+        const parent = elem.parentNode || elem.ownerDocument;
+        if (typeof event === 'string') {
+            event = {
+                type: event,
+                target: elem
+            };
+        } else if (!event.target) {
+            event.target = elem;
+        }
+        event = fixEvent(event);
+        if (elemData.dispatcher) {
+            elemData.dispatcher.call(elem, event, hash);
+        }
+        if (parent && !event.isPropagationStopped() && event.bubbles === true) {
+            trigger.call(null, parent, event, hash);
+        } else if (!parent && !event.defaultPrevented && event.target && event.target[event.type]) {
+            if (!DomData.has(event.target)) {
+                DomData.set(event.target, {});
+            }
+            const targetData = DomData.get(event.target);
+            if (event.target[event.type]) {
+                targetData.disabled = true;
+                if (typeof event.target[event.type] === 'function') {
+                    event.target[event.type]();
+                }
+                targetData.disabled = false;
+            }
+        }
+        return !event.defaultPrevented;
+    }
+    function one(elem, type, fn) {
+        if (Array.isArray(type)) {
+            return _handleMultipleEvents(one, elem, type, fn);
+        }
+        const func = function () {
+            off(elem, type, func);
+            fn.apply(this, arguments);
+        };
+        func.guid = fn.guid = fn.guid || Guid.newGUID();
+        on(elem, type, func);
+    }
+    function any(elem, type, fn) {
+        const func = function () {
+            off(elem, type, func);
+            fn.apply(this, arguments);
+        };
+        func.guid = fn.guid = fn.guid || Guid.newGUID();
+        on(elem, type, func);
+    }
+    return {
+        fixEvent: fixEvent,
+        on: domx.eventer.on, //on,
+        off: domx.eventer.off, //off,
+        trigger: domx.eventer.trigger, //trigger,
+        one: domx.eventer.one, //one,
+        any: domx.eventer.one //any
+    };
+});
+define('skylark-videojs/event-target',[
+    "skylark-langx-events/Emitter",
+    './utils/events'
+], function (Emitter,Events) {
+    'use strict';
+
+    /*
+    const EventTarget = function () {
+    };
+    EventTarget.prototype.allowedEvents_ = {};
+    EventTarget.prototype.on = function (type, fn) {
+        const ael = this.addEventListener;
+        this.addEventListener = () => {
+        };
+        Events.on(this, type, fn);
+        this.addEventListener = ael;
+    };
+    EventTarget.prototype.addEventListener = EventTarget.prototype.on;
+    EventTarget.prototype.off = function (type, fn) {
+        Events.off(this, type, fn);
+    };
+    EventTarget.prototype.removeEventListener = EventTarget.prototype.off;
+    EventTarget.prototype.one = function (type, fn) {
+        const ael = this.addEventListener;
+        this.addEventListener = () => {
+        };
+        Events.one(this, type, fn);
+        this.addEventListener = ael;
+    };
+    EventTarget.prototype.any = function (type, fn) {
+        const ael = this.addEventListener;
+        this.addEventListener = () => {
+        };
+        Events.any(this, type, fn);
+        this.addEventListener = ael;
+    };
+    EventTarget.prototype.trigger = function (event) {
+        const type = event.type || event;
+        if (typeof event === 'string') {
+            event = { type };
+        }
+        event = Events.fixEvent(event);
+        if (this.allowedEvents_[type] && this['on' + type]) {
+            this['on' + type](event);
+        }
+        Events.trigger(this, event);
+    };
+    EventTarget.prototype.dispatchEvent = EventTarget.prototype.trigger;
+
+    */
+
+    var EventTarget = Emitter.inherit({});
+    EventTarget.prototype.addEventListener = EventTarget.prototype.on;
+    EventTarget.prototype.dispatchEvent = EventTarget.prototype.trigger;
+    EventTarget.prototype.removeEventListener = EventTarget.prototype.off;
+    EventTarget.prototype.any = EventTarget.prototype.one;
+
+    let EVENT_MAP;
+    EventTarget.prototype.queueTrigger = function (event) {
+        if (!EVENT_MAP) {
+            EVENT_MAP = new Map();
+        }
+        const type = event.type || event;
+        let map = EVENT_MAP.get(this);
+        if (!map) {
+            map = new Map();
+            EVENT_MAP.set(this, map);
+        }
+        const oldTimeout = map.get(type);
+        map.delete(type);
+        window.clearTimeout(oldTimeout);
+        const timeout = window.setTimeout(() => {
+            if (map.size === 0) {
+                map = null;
+                EVENT_MAP.delete(this);
+            }
+            this.trigger(event);
+        }, 0);
+        map.set(type, timeout);
+    };
+
+    return EventTarget;
+});
 define('skylark-videojs/utils/time-ranges',[],function () {
     'use strict';
     function rangeCheck(fnName, index, maxIndex) {
@@ -25547,9 +25261,9 @@ define('skylark-videojs/modal-dialog',[
     return ModalDialog;
 });
 define('skylark-videojs/tracks/track-list',[
-    '../event-target',
-    '../mixins/evented'
-], function (EventTarget, evented) {
+    '../event-target'
+    ///'../mixins/evented'
+], function (EventTarget) {
     'use strict';
     class TrackList extends EventTarget {
         constructor(tracks = []) {
@@ -25588,7 +25302,8 @@ define('skylark-videojs/tracks/track-list',[
                     target: this
                 });
             };
-            if (evented.isEvented(track)) {
+            ///if (evented.isEvented(track)) {
+            if (track.addEventListener) {
                 track.addEventListener('labelchange', track.labelchange_);
             }
         }
@@ -27838,8 +27553,8 @@ define('skylark-videojs/utils/xhr',[
 	"skylark-langx-globals/window",
 	"skylark-langx-objects",
 	"skylark-langx-types",
-	"skylark-net-http/xhr"
-],function(window,objects,types,_xhr){
+	"skylark-net-http/Xhr"
+],function(window,objects,types,_Xhr){
 
 	"use strict";
 
@@ -28115,7 +27830,21 @@ define('skylark-videojs/utils/xhr',[
 
 	function noop() {}
 
-	return createXHR;
+	//return createXHR;
+
+
+	return function(uri, options, callback) {
+	    options = initParams(uri, options, callback);
+
+	    var x =  _Xhr.request(options.uri,options).then(function(result){
+	    	options.callback(null,x,result)
+	    }).catch(function(e,status){
+	    	options.callback(e,status);
+	    });
+
+	    return x;
+
+	};
 
 
 });
@@ -29419,10 +29148,10 @@ define('skylark-videojs/poster-image',[
         constructor(player, options) {
             super(player, options);
             this.update();
-            player.on('posterchange', Fn.bind(this, this.update));
+            this.listenTo(player,'posterchange',this.update);
         }
         dispose() {
-            this.player().off('posterchange', this.update);
+            this.unlistenTo(this.player(),'posterchange', this.update);
             super.dispose();
         }
         createEl() {
@@ -33592,6 +33321,7 @@ define('skylark-videojs/utils/define-lazy-property',[],function () {
     return defineLazyProperty;
 });
 define('skylark-videojs/tech/html5',[
+    "skylark-langx",
     'skylark-langx-globals/document',
     './tech',
     '../utils/dom',
@@ -33606,6 +33336,7 @@ define('skylark-videojs/tech/html5',[
     '../utils/define-lazy-property',
     '../utils/promise'
 ], function (
+    langx,
     document,
     Tech, 
     Dom, 
@@ -33624,7 +33355,58 @@ define('skylark-videojs/tech/html5',[
     const NORMAL = TRACK_TYPES.NORMAL,
           REMOTE = TRACK_TYPES.REMOTE;
 
+    const NativeEvents = {
+            'abort' : 3,
+            'canplay' : 3,
+            'canplaythrough' : 3,
+            'disablepictureinpicturechanged':3,
+            'durationchange':3,
+            'emptied' : 3,
+            'ended':3,
+            'enterpictureinpicture':3,
+            'error' : 3,
+            'leavepictureinpicture':3,
+            'loadeddata' : 3,
+            'loadstart' : 3,
+            'loadedmetadata':3,
+            'pause' : 3,
+            'play':3,
+            'playing' : 3,
+            'posterchange':3,
+            'progress' : 3,
+            'ratechange':3,
+            'seeking' : 3,
+            'seeked' : 3,
+            'sourceset':3,
+            'stalled' : 3,
+            'suspend':3,
+            'textdata':3,
+            'texttrackchange':3,
+            'timeupdate':3,
+            'volumechange':3,
+            'waiting' : 3,
+
+    };
     class Html5 extends Tech {
+
+        isNativeEvent(events) {
+            var ret  = super.isNativeEvent(events);
+            if (ret) {
+                return true;
+            }
+            if (langx.isString(events)) {
+                return !!NativeEvents[events];
+            } else if (langx.isArray(events)) {
+                for (var i=0; i<events.length; i++) {
+                    if (NativeEvents[events[i]]) {
+                        return true;
+                    }
+                }
+                return false;
+            }            
+
+        } 
+
         constructor(options, ready) {
             super(options, ready);
             const source = options.source;
@@ -34400,7 +34182,7 @@ define('skylark-videojs/tech/html5',[
 define('skylark-videojs/player',[
     'skylark-langx-globals/document',
     './component',
-    './mixins/evented',
+    ///'./mixins/evented',
     './utils/events',
     './utils/dom',
     './utils/fn',
@@ -34440,7 +34222,6 @@ define('skylark-videojs/player',[
 ], function (
     document,
     Component,
-    evented, 
     Events, 
     Dom, 
     Fn, 
@@ -34805,21 +34586,21 @@ define('skylark-videojs/player',[
                 return !!this.fluid_;
             }
             this.fluid_ = !!bool;
-            if (evented.isEvented(this)) {
+            ///if (evented.isEvented(this)) {
                 this.unlistenTo([
                     'playerreset',
                     'resize'
                 ], this.updateStyleEl_);
-            }
+            ///}
             if (bool) {
                 this.addClass('vjs-fluid');
                 this.fill(false);
-                evented.addEventedCallback(this, () => {
-                    this.listenTo([
-                        'playerreset',
-                        'resize'
-                    ], this.updateStyleEl_);
-                });
+                ///evented.addEventedCallback(this, () => {
+                ///    this.listenTo([
+                ///        'playerreset',
+                ///        'resize'
+                ///    ], this.updateStyleEl_);
+                ///});
             } else {
                 this.removeClass('vjs-fluid');
             }
@@ -35961,9 +35742,9 @@ define('skylark-videojs/player',[
             this.loadTech_(this.options_.techOrder[0], null);
             this.techCall_('reset');
             this.resetControlBarUI_();
-            if (evented.isEvented(this)) {
+            ///if (evented.isEvented(this)) {
                 this.trigger('playerreset');
-            }
+            ///}
         }
         resetControlBarUI_() {
             this.resetProgressBar_();
@@ -36210,12 +35991,12 @@ define('skylark-videojs/player',[
             this.listenTo('mouseleave', handleMouseUpAndMouseLeave);
             const controlBar = this.getChild('controlBar');
             if (controlBar && !browser.IS_IOS && !browser.IS_ANDROID) {
-                controlBar.on('mouseenter', function (event) {
-                    this.player().cache_.inactivityTimeout = this.player().options_.inactivityTimeout;
-                    this.player().options_.inactivityTimeout = 0;
+                this.listenTo(controlBar,'mouseenter', function (event) {
+                    this.cache_.inactivityTimeout = this.player().options_.inactivityTimeout;
+                    this.options_.inactivityTimeout = 0;
                 });
-                controlBar.on('mouseleave', function (event) {
-                    this.player().options_.inactivityTimeout = this.player().cache_.inactivityTimeout;
+                this.listenTo(controlBar,'mouseleave', function (event) {
+                    this.options_.inactivityTimeout = this.player().cache_.inactivityTimeout;
                 });
             }
             this.listenTo('keydown', handleActivity);
@@ -36299,9 +36080,9 @@ define('skylark-videojs/player',[
             }
             if (this.language_ !== String(code).toLowerCase()) {
                 this.language_ = String(code).toLowerCase();
-                if (evented.isEvented(this)) {
+                ///if (evented.isEvented(this)) {
                     this.trigger('languagechange');
-                }
+                ///}
             }
         }
         languages() {
@@ -36556,13 +36337,14 @@ define('skylark-videojs/player',[
     return Player;
 });
 define('skylark-videojs/plugin',[
-    './mixins/evented',
+    ///'./mixins/evented',
     './mixins/stateful',
     './utils/events',
     './utils/fn',
     './utils/log',
+    "./event-target",
     './player'
-], function (evented, stateful, Events, Fn, log, Player) {
+], function ( stateful, Events, Fn, log, EventTarget, Player) {
     'use strict';
     const BASE_PLUGIN_NAME = 'plugin';
     const PLUGIN_CACHE_KEY = 'activePlugins_';
@@ -36616,7 +36398,7 @@ define('skylark-videojs/plugin',[
             return instance;
         };
     };
-    class Plugin {
+    class Plugin  extends EventTarget{
         constructor(player) {
             if (this.constructor === Plugin) {
                 throw new Error('Plugin must be sub-classed; not directly instantiated.');
@@ -36625,8 +36407,8 @@ define('skylark-videojs/plugin',[
             if (!this.log) {
                 this.log = this.player.log.createLogger(this.name);
             }
-            evented(this);
-            delete this.trigger;
+            ///evented(this);
+            ///delete this.trigger;
             stateful(this, this.constructor.defaultState);
             markPluginAsActive(player, this.name);
             this.dispose = Fn.bind(this, this.dispose);
@@ -36635,6 +36417,7 @@ define('skylark-videojs/plugin',[
         version() {
             return this.constructor.VERSION;
         }
+        /*
         getEventHash(hash = {}) {
             hash.name = this.name;
             hash.plugin = this.constructor;
@@ -36644,6 +36427,7 @@ define('skylark-videojs/plugin',[
         trigger(event, hash = {}) {
             return Events.trigger(this.eventBusEl_, event, this.getEventHash(hash));
         }
+        */
         handleStateChanged(e) {
         }
         dispose() {
@@ -36717,61 +36501,6 @@ define('skylark-videojs/plugin',[
     };
     return Plugin;
 });
-define('skylark-videojs/utils/inherits',[
-  "skylark-langx-constructs/inherit"
-],function(inherit){
-  /*
-  function _inherits(subClass, superClass) {
-    if (typeof superClass !== "function" && superClass !== null) {
-      throw new TypeError("Super expression must either be null or a function");
-    }
-
-    subClass.prototype = Object.create(superClass && superClass.prototype, {
-      constructor: {
-        value: subClass,
-        writable: true,
-        configurable: true
-      }
-    });
-    if (superClass) Object.setPrototypeOf(subClass, superClass);
-  }
- 
-  return _inherits;
-  */
-
-  return inherit;
-});
-
-define('skylark-videojs/extend',[
-    './utils/inherits'
-], function (_inherits) {
-    'use strict';
-    const extend = function (superClass, subClassMethods = {}) {
-        let subClass = function () {
-            superClass.apply(this, arguments);
-        };
-        let methods = {};
-        if (typeof subClassMethods === 'object') {
-            if (subClassMethods.constructor !== Object.prototype.constructor) {
-                subClass = subClassMethods.constructor;
-            }
-            methods = subClassMethods;
-        } else if (typeof subClassMethods === 'function') {
-            subClass = subClassMethods;
-        }
-        _inherits(subClass, superClass);
-        if (superClass) {
-            subClass.super_ = superClass;
-        }
-        for (const name in methods) {
-            if (methods.hasOwnProperty(name)) {
-                subClass.prototype[name] = methods[name];
-            }
-        }
-        return subClass;
-    };
-    return extend;
-});
 define('skylark-videojs/video',[
     "skylark-langx-globals/window",
     'skylark-net-http/xhr',
@@ -36795,7 +36524,7 @@ define('skylark-videojs/video',[
     './utils/url',
     './utils/obj',
     './utils/computed-style',
-    './extend',
+    ///'./extend',
     './tech/tech',
     './tech/middleware',
     './utils/define-lazy-property'
@@ -36822,7 +36551,7 @@ define('skylark-videojs/video',[
     Url, 
     obj, 
     computedStyle, 
-    extend, 
+    ///extend, 
     Tech, 
     middleware, 
     defineLazyProperty
@@ -36963,7 +36692,7 @@ define('skylark-videojs/video',[
     });
     videojs.browser = browser;
     videojs.TOUCH_ENABLED = browser.TOUCH_ENABLED;
-    videojs.extend = extend;
+    ///videojs.extend = extend;
     videojs.mergeOptions = mergeOptions;
     videojs.bind = Fn.bind;
     videojs.registerPlugin = Plugin.registerPlugin;

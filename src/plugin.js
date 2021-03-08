@@ -1,11 +1,12 @@
 define([
-    './mixins/evented',
+    ///'./mixins/evented',
     './mixins/stateful',
     './utils/events',
     './utils/fn',
     './utils/log',
+    "./event-target",
     './player'
-], function (evented, stateful, Events, Fn, log, Player) {
+], function ( stateful, Events, Fn, log, EventTarget, Player) {
     'use strict';
     const BASE_PLUGIN_NAME = 'plugin';
     const PLUGIN_CACHE_KEY = 'activePlugins_';
@@ -59,7 +60,7 @@ define([
             return instance;
         };
     };
-    class Plugin {
+    class Plugin  extends EventTarget{
         constructor(player) {
             if (this.constructor === Plugin) {
                 throw new Error('Plugin must be sub-classed; not directly instantiated.');
@@ -68,8 +69,8 @@ define([
             if (!this.log) {
                 this.log = this.player.log.createLogger(this.name);
             }
-            evented(this);
-            delete this.trigger;
+            ///evented(this);
+            ///delete this.trigger;
             stateful(this, this.constructor.defaultState);
             markPluginAsActive(player, this.name);
             this.dispose = Fn.bind(this, this.dispose);
@@ -78,6 +79,7 @@ define([
         version() {
             return this.constructor.VERSION;
         }
+        /*
         getEventHash(hash = {}) {
             hash.name = this.name;
             hash.plugin = this.constructor;
@@ -87,6 +89,7 @@ define([
         trigger(event, hash = {}) {
             return Events.trigger(this.eventBusEl_, event, this.getEventHash(hash));
         }
+        */
         handleStateChanged(e) {
         }
         dispose() {

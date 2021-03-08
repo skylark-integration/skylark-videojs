@@ -1,7 +1,7 @@
 define([
     'skylark-langx-globals/document',
     './component',
-    './mixins/evented',
+    ///'./mixins/evented',
     './utils/events',
     './utils/dom',
     './utils/fn',
@@ -41,7 +41,6 @@ define([
 ], function (
     document,
     Component,
-    evented, 
     Events, 
     Dom, 
     Fn, 
@@ -406,21 +405,21 @@ define([
                 return !!this.fluid_;
             }
             this.fluid_ = !!bool;
-            if (evented.isEvented(this)) {
+            ///if (evented.isEvented(this)) {
                 this.unlistenTo([
                     'playerreset',
                     'resize'
                 ], this.updateStyleEl_);
-            }
+            ///}
             if (bool) {
                 this.addClass('vjs-fluid');
                 this.fill(false);
-                evented.addEventedCallback(this, () => {
-                    this.listenTo([
-                        'playerreset',
-                        'resize'
-                    ], this.updateStyleEl_);
-                });
+                ///evented.addEventedCallback(this, () => {
+                ///    this.listenTo([
+                ///        'playerreset',
+                ///        'resize'
+                ///    ], this.updateStyleEl_);
+                ///});
             } else {
                 this.removeClass('vjs-fluid');
             }
@@ -1562,9 +1561,9 @@ define([
             this.loadTech_(this.options_.techOrder[0], null);
             this.techCall_('reset');
             this.resetControlBarUI_();
-            if (evented.isEvented(this)) {
+            ///if (evented.isEvented(this)) {
                 this.trigger('playerreset');
-            }
+            ///}
         }
         resetControlBarUI_() {
             this.resetProgressBar_();
@@ -1811,12 +1810,12 @@ define([
             this.listenTo('mouseleave', handleMouseUpAndMouseLeave);
             const controlBar = this.getChild('controlBar');
             if (controlBar && !browser.IS_IOS && !browser.IS_ANDROID) {
-                controlBar.on('mouseenter', function (event) {
-                    this.player().cache_.inactivityTimeout = this.player().options_.inactivityTimeout;
-                    this.player().options_.inactivityTimeout = 0;
+                this.listenTo(controlBar,'mouseenter', function (event) {
+                    this.cache_.inactivityTimeout = this.player().options_.inactivityTimeout;
+                    this.options_.inactivityTimeout = 0;
                 });
-                controlBar.on('mouseleave', function (event) {
-                    this.player().options_.inactivityTimeout = this.player().cache_.inactivityTimeout;
+                this.listenTo(controlBar,'mouseleave', function (event) {
+                    this.options_.inactivityTimeout = this.player().cache_.inactivityTimeout;
                 });
             }
             this.listenTo('keydown', handleActivity);
@@ -1900,9 +1899,9 @@ define([
             }
             if (this.language_ !== String(code).toLowerCase()) {
                 this.language_ = String(code).toLowerCase();
-                if (evented.isEvented(this)) {
+                ///if (evented.isEvented(this)) {
                     this.trigger('languagechange');
-                }
+                ///}
             }
         }
         languages() {

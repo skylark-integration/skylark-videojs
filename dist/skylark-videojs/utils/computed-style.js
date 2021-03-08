@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define(["skylark-langx-globals/window"],function(t){"use strict";return function(e,n){if(!e||!n)return"";if("function"==typeof t.getComputedStyle){const r=t.getComputedStyle(e);return r?r.getPropertyValue(n)||r[n]:""}return""}});
+define(["skylark-langx-globals/window","skylark-domx-styler"],function(s,l){"use strict";return l.css});
 //# sourceMappingURL=../sourcemaps/utils/computed-style.js.map

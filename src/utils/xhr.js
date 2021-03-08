@@ -2,8 +2,8 @@ define([
 	"skylark-langx-globals/window",
 	"skylark-langx-objects",
 	"skylark-langx-types",
-	"skylark-net-http/xhr"
-],function(window,objects,types,_xhr){
+	"skylark-net-http/Xhr"
+],function(window,objects,types,_Xhr){
 
 	"use strict";
 
@@ -279,7 +279,21 @@ define([
 
 	function noop() {}
 
-	return createXHR;
+	//return createXHR;
+
+
+	return function(uri, options, callback) {
+	    options = initParams(uri, options, callback);
+
+	    var x =  _Xhr.request(options.uri,options).then(function(result){
+	    	options.callback(null,x,result)
+	    }).catch(function(e,status){
+	    	options.callback(e,status);
+	    });
+
+	    return x;
+
+	};
 
 
 });

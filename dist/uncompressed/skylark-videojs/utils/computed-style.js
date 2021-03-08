@@ -1,6 +1,7 @@
 define([
-    'skylark-langx-globals/window'
-], function (window) {
+    'skylark-langx-globals/window',
+    'skylark-domx-styler'
+], function (window,styler) {
     'use strict';
     function computedStyle(el, prop) {
         if (!el || !prop) {
@@ -12,5 +13,7 @@ define([
         }
         return '';
     }
-    return computedStyle;
+    ///return computedStyle;
+    return styler.css;
+
 });

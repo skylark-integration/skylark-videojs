@@ -11,10 +11,10 @@ define([
         constructor(player, options) {
             super(player, options);
             this.update();
-            player.on('posterchange', Fn.bind(this, this.update));
+            this.listenTo(player,'posterchange',this.update);
         }
         dispose() {
-            this.player().off('posterchange', this.update);
+            this.unlistenTo(this.player(),'posterchange', this.update);
             super.dispose();
         }
         createEl() {

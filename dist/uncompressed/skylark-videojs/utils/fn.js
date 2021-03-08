@@ -1,6 +1,7 @@
 define([
+    'skylark-langx-funcs',
     './guid'
-], function (GUID) {
+], function (funcs,GUID) {
     'use strict';
     const UPDATE_REFRESH_INTERVAL = 30;
     const bind = function (context, fn, uid) {
@@ -50,7 +51,7 @@ define([
     return {
         UPDATE_REFRESH_INTERVAL: UPDATE_REFRESH_INTERVAL,
         bind: bind,
-        throttle: throttle,
-        debounce: debounce
+        throttle: funcs.throttle, //throttle,
+        debounce: funcs.debounce //debounce
     };
 });

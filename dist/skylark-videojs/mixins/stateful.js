@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define(["./evented","../utils/obj"],function(t,e){"use strict";const n={state:{},setState(n){let s;return"function"==typeof n&&(n=n()),e.each(n,(t,e)=>{this.state[e]!==t&&((s=s||{})[e]={from:this.state[e],to:t}),this.state[e]=t}),s&&t.isEvented(this)&&this.trigger({changes:s,type:"statechanged"}),s}};return function(s,a){return e.assign(s,n),s.state=e.assign({},s.state,a),"function"==typeof s.handleStateChanged&&t.isEvented(s)&&s.on("statechanged",s.handleStateChanged),s}});
+define(["../utils/obj"],function(t){"use strict";const e={state:{},setState(e){let n;return"function"==typeof e&&(e=e()),t.each(e,(t,e)=>{this.state[e]!==t&&((n=n||{})[e]={from:this.state[e],to:t}),this.state[e]=t}),n&&this.trigger&&this.trigger({changes:n,type:"statechanged"}),n}};return function(n,s){return t.assign(n,e),n.state=t.assign({},n.state,s),"function"==typeof n.handleStateChanged&&n.on&&n.on("statechanged",n.handleStateChanged),n}});
 //# sourceMappingURL=../sourcemaps/mixins/stateful.js.map

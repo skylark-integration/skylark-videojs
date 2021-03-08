@@ -2,7 +2,7 @@ define([
     "skylark-langx",
     "skylark-domx-eventer",
     "skylark-widgets-base/Widget",
-    './mixins/evented',
+    ///'./mixins/evented',
     './mixins/stateful',
     './utils/dom',
     './utils/dom-data',
@@ -13,11 +13,123 @@ define([
     './utils/computed-style',
     './utils/map',
     './utils/set'
-], function (langx,eventer,Widget,evented, stateful, Dom, DomData, Fn, Guid, stringCases, mergeOptions, computedStyle, Map, Set) {
+], function (langx,eventer,Widget, stateful, Dom, DomData, Fn, Guid, stringCases, mergeOptions, computedStyle, Map, Set) {
     'use strict';
+
+    function isNativeEvent(el,events) {
+        if (langx.isString(events)) {
+            return el["on"+ events] !== undefined;
+        } else if (langx.isArray(events)) {
+            for (var i=0; i<events.length; i++) {
+                if (el["on"+ events[i]] !== undefined) {
+                    return true;
+                }
+            }
+            return events.length > 0;
+        }
+    }
+
+    const NativeEvents = {
+            "drag": 2, // DragEvent
+            "dragend": 2, // DragEvent
+            "dragenter": 2, // DragEvent
+            "dragexit": 2, // DragEvent
+            "dragleave": 2, // DragEvent
+            "dragover": 2, // DragEvent
+            "dragstart": 2, // DragEvent
+            "drop": 2, // DragEvent
+
+            "abort": 3, // Event
+            "change": 3, // Event
+            "error": 3, // Event
+            "selectionchange": 3, // Event
+            "submit": 3, // Event
+            "reset": 3, // Event
+            'fullscreenchange':3,
+            'fullscreenerror':3,
+
+/*
+            'disablepictureinpicturechanged':3,
+            'ended':3,
+            'enterpictureinpicture':3,
+            'durationchange':3,
+            'leavepictureinpicture':3,
+            'loadstart' : 3,
+            'loadedmetadata':3,
+            'pause' : 3,
+            'play':3,
+            'posterchange':3,
+            'ratechange':3,
+            'seeking' : 3,
+            'sourceset':3,
+            'suspend':3,
+            'textdata':3,
+            'texttrackchange':3,
+            'timeupdate':3,
+            'volumechange':3,
+            'waiting' : 3,
+*/
+
+
+            "focus": 4, // FocusEvent
+            "blur": 4, // FocusEvent
+            "focusin": 4, // FocusEvent
+            "focusout": 4, // FocusEvent
+
+            "keydown": 5, // KeyboardEvent
+            "keypress": 5, // KeyboardEvent
+            "keyup": 5, // KeyboardEvent
+
+            "message": 6, // MessageEvent
+
+            "click": 7, // MouseEvent
+            "contextmenu": 7, // MouseEvent
+            "dblclick": 7, // MouseEvent
+            "mousedown": 7, // MouseEvent
+            "mouseup": 7, // MouseEvent
+            "mousemove": 7, // MouseEvent
+            "mouseover": 7, // MouseEvent
+            "mouseout": 7, // MouseEvent
+            "mouseenter": 7, // MouseEvent
+            "mouseleave": 7, // MouseEvent
+
+
+            "progress" : 11, //ProgressEvent
+
+            "textInput": 12, // TextEvent
+
+            "tap": 13,
+            "touchstart": 13, // TouchEvent
+            "touchmove": 13, // TouchEvent
+            "touchend": 13, // TouchEvent
+
+            "load": 14, // UIEvent
+            "resize": 14, // UIEvent
+            "select": 14, // UIEvent
+            "scroll": 14, // UIEvent
+            "unload": 14, // UIEvent,
+
+            "wheel": 15, // WheelEvent
+
+    };
+
     class Component extends Widget {
+        isNativeEvent(events) {
+            if (langx.isString(events)) {
+                return !!NativeEvents[events];
+            } else if (langx.isArray(events)) {
+                for (var i=0; i<events.length; i++) {
+                    if (NativeEvents[events[i]]) {
+                        return true;
+                    }
+                }
+                return false;
+            }            
+
+        }   
+
         on(events, selector, data, callback, ctx, /*used internally*/ one) {
-            if (this.el_ && eventer.isNativeEvent(events)) {
+            if (this.el_ && this.isNativeEvent(events)) {
                 eventer.on(this.el_,events,selector,data,callback,ctx,one);
             } else {
                 super.on(events, selector, data, callback, ctx,  one);
@@ -25,7 +137,7 @@ define([
         }   
 
         off(events, callback) {
-            if (this.el_ && eventer.isNativeEvent(events)) {
+            if (this.el_ && this.isNativeEvent(events)) {
                 eventer.off(this.el_,events,callback);
             } else {
                 super.off(events,callback);
@@ -37,7 +149,7 @@ define([
                 one = callback;
                 callback = event;
                 event = obj;
-                if (this.el_ && eventer.isNativeEvent(event)) {
+                if (this.el_ && this.isNativeEvent(event)) {
                     eventer.on(this.el_,event,callback,this,one);
                 } else {
                     this.on(event,callback,this,one);
@@ -55,7 +167,7 @@ define([
             if (langx.isString(obj) || langx.isArray(obj)) {
                 callback = event;
                 event = obj;
-                if (this.el_ && eventer.isNativeEvent(event)) {
+                if (this.el_ && this.isNativeEvent(event)) {
                     eventer.off(this.el_,event,callback);
                 } else {
                     this.off(event,callback);                   

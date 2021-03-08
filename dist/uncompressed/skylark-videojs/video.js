@@ -21,7 +21,7 @@ define([
     './utils/url',
     './utils/obj',
     './utils/computed-style',
-    './extend',
+    ///'./extend',
     './tech/tech',
     './tech/middleware',
     './utils/define-lazy-property'
@@ -48,7 +48,7 @@ define([
     Url, 
     obj, 
     computedStyle, 
-    extend, 
+    ///extend, 
     Tech, 
     middleware, 
     defineLazyProperty
@@ -189,7 +189,7 @@ define([
     });
     videojs.browser = browser;
     videojs.TOUCH_ENABLED = browser.TOUCH_ENABLED;
-    videojs.extend = extend;
+    ///videojs.extend = extend;
     videojs.mergeOptions = mergeOptions;
     videojs.bind = Fn.bind;
     videojs.registerPlugin = Plugin.registerPlugin;
