@@ -452,63 +452,6 @@ define('skylark-net-http/xhr',[
 
 	return http.Xhr = Xhr;	
 });
-define('skylark-videojs/fullscreen-api',[], function () {
-    'use strict';
-    const FullscreenApi = { prefixed: true };
-    const apiMap = [
-        [
-            'requestFullscreen',
-            'exitFullscreen',
-            'fullscreenElement',
-            'fullscreenEnabled',
-            'fullscreenchange',
-            'fullscreenerror',
-            'fullscreen'
-        ],
-        [
-            'webkitRequestFullscreen',
-            'webkitExitFullscreen',
-            'webkitFullscreenElement',
-            'webkitFullscreenEnabled',
-            'webkitfullscreenchange',
-            'webkitfullscreenerror',
-            '-webkit-full-screen'
-        ],
-        [
-            'mozRequestFullScreen',
-            'mozCancelFullScreen',
-            'mozFullScreenElement',
-            'mozFullScreenEnabled',
-            'mozfullscreenchange',
-            'mozfullscreenerror',
-            '-moz-full-screen'
-        ],
-        [
-            'msRequestFullscreen',
-            'msExitFullscreen',
-            'msFullscreenElement',
-            'msFullscreenEnabled',
-            'MSFullscreenChange',
-            'MSFullscreenError',
-            '-ms-fullscreen'
-        ]
-    ];
-    const specApi = apiMap[0];
-    let browserApi;
-    for (let i = 0; i < apiMap.length; i++) {
-        if (apiMap[i][1] in document) {
-            browserApi = apiMap[i];
-            break;
-        }
-    }
-    if (browserApi) {
-        for (let i = 0; i < browserApi.length; i++) {
-            FullscreenApi[specApi[i]] = browserApi[i];
-        }
-        FullscreenApi.prefixed = browserApi[0] !== specApi[0];
-    }
-    return FullscreenApi;
-});
 define('skylark-videojs/utils/create-logger',[], function () {
     'use strict';
     let history = [];
@@ -751,12 +694,11 @@ define('skylark-videojs/utils/dom',[
     "skylark-langx-globals/window",
     "skylark-langx-globals/document",   
     "skylark-domx",
-    '../fullscreen-api',
     './log',
     './obj',
     './computed-style',
     './browser'
-], function (window,document,domx,fs, log, obj, computedStyle, browser) {
+], function (window,document,domx, log, obj, computedStyle, browser) {
     'use strict';
     function isNonBlankString(str) {
         return typeof str === 'string' && Boolean(str.trim());
@@ -956,7 +898,8 @@ define('skylark-videojs/utils/dom',[
         const height = el.offsetHeight;
         let left = 0;
         let top = 0;
-        while (el.offsetParent && el !== document[fs.fullscreenElement]) {
+        ///while (el.offsetParent && el !== document[fs.fullscreenElement]) {
+        while (el.offsetParent && !domx.noder.isFullscreen(el)) {
             left += el.offsetLeft;
             top += el.offsetTop;
             el = el.offsetParent;
@@ -2719,6 +2662,69 @@ define('skylark-videojs/utils/buffer',['./time-ranges'], function (timeRages) {
         return bufferedDuration / duration;
     }
     return { bufferedPercent: bufferedPercent };
+});
+define('skylark-videojs/fullscreen-api',[
+    "skylark-domx-browser"
+], function (browser) {
+    'use strict';
+    /*
+    const FullscreenApi = { prefixed: true };
+    const apiMap = [
+        [
+            'requestFullscreen',
+            'exitFullscreen',
+            'fullscreenElement',
+            'fullscreenEnabled',
+            'fullscreenchange',
+            'fullscreenerror',
+            'fullscreen'
+        ],
+        [
+            'webkitRequestFullscreen',
+            'webkitExitFullscreen',
+            'webkitFullscreenElement',
+            'webkitFullscreenEnabled',
+            'webkitfullscreenchange',
+            'webkitfullscreenerror',
+            '-webkit-full-screen'
+        ],
+        [
+            'mozRequestFullScreen',
+            'mozCancelFullScreen',
+            'mozFullScreenElement',
+            'mozFullScreenEnabled',
+            'mozfullscreenchange',
+            'mozfullscreenerror',
+            '-moz-full-screen'
+        ],
+        [
+            'msRequestFullscreen',
+            'msExitFullscreen',
+            'msFullscreenElement',
+            'msFullscreenEnabled',
+            'MSFullscreenChange',
+            'MSFullscreenError',
+            '-ms-fullscreen'
+        ]
+    ];
+    const specApi = apiMap[0];
+    let browserApi;
+    for (let i = 0; i < apiMap.length; i++) {
+        if (apiMap[i][1] in document) {
+            browserApi = apiMap[i];
+            break;
+        }
+    }
+    if (browserApi) {
+        for (let i = 0; i < browserApi.length; i++) {
+            FullscreenApi[specApi[i]] = browserApi[i];
+        }
+        FullscreenApi.prefixed = browserApi[0] !== specApi[0];
+    }
+    return FullscreenApi;
+    */
+
+    return browser.support.fullscreen;
 });
 define('skylark-videojs/media-error',['./utils/obj'], function (obj) {
     'use strict';
@@ -9518,6 +9524,7 @@ define('skylark-videojs/utils/define-lazy-property',[],function () {
 define('skylark-videojs/tech/html5',[
     "skylark-langx",
     'skylark-langx-globals/document',
+    "skylark-domx-noder",
     './tech',
     '../utils/dom',
     '../utils/url',
@@ -9533,6 +9540,7 @@ define('skylark-videojs/tech/html5',[
 ], function (
     langx,
     document,
+    noder,
     Tech, 
     Dom, 
     Url, 
@@ -9965,7 +9973,8 @@ define('skylark-videojs/tech/html5',[
                 this.trigger('fullscreenerror', new Error('The video is not fullscreen'));
                 return;
             }
-            this.el_.webkitExitFullScreen();
+            //this.el_.webkitExitFullScreen();
+            noder.fullscreen(false);
         }
         requestPictureInPicture() {
             return this.el_.requestPictureInPicture();
@@ -10376,6 +10385,7 @@ define('skylark-videojs/tech/html5',[
 });
 define('skylark-videojs/player',[
     'skylark-langx-globals/document',
+    'skylark-domx',
     './component',
     ///'./mixins/evented',
     './utils/events',
@@ -10416,6 +10426,7 @@ define('skylark-videojs/player',[
     './tech/html5'
 ], function (
     document,
+    domx,
     Component,
     Events, 
     Dom, 
@@ -11631,8 +11642,10 @@ define('skylark-videojs/player',[
                     fsOptions = fullscreenOptions;
                 }
             }
-            if (this.fsApi_.requestFullscreen) {
-                const promise = this.el_[this.fsApi_.requestFullscreen](fsOptions);
+//            if (this.fsApi_.requestFullscreen) {
+//                const promise = this.el_[this.fsApi_.requestFullscreen](fsOptions);
+            if (domx.browser.support.fullscreen) {
+                const promise = domx.noder.fullscreen(this.el_);
                 if (promise) {
                     promise.then(() => this.isFullscreen(true), () => this.isFullscreen(false));
                 }
@@ -11673,7 +11686,8 @@ define('skylark-videojs/player',[
         }
         exitFullscreenHelper_() {
             if (this.fsApi_.requestFullscreen) {
-                const promise = document[this.fsApi_.exitFullscreen]();
+                //const promise = document[this.fsApi_.exitFullscreen]();
+                const promise = domx.noder.fullscreen(false);
                 if (promise) {
                     promise.then(() => this.isFullscreen(false));
                 }

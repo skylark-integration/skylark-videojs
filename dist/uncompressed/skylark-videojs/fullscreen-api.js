@@ -1,5 +1,8 @@
-define([], function () {
+define([
+    "skylark-domx-browser"
+], function (browser) {
     'use strict';
+    /*
     const FullscreenApi = { prefixed: true };
     const apiMap = [
         [
@@ -54,4 +57,7 @@ define([], function () {
         FullscreenApi.prefixed = browserApi[0] !== specApi[0];
     }
     return FullscreenApi;
+    */
+
+    return browser.support.fullscreen;
 });

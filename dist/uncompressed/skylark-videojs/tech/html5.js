@@ -1,6 +1,7 @@
 define([
     "skylark-langx",
     'skylark-langx-globals/document',
+    "skylark-domx-noder",
     './tech',
     '../utils/dom',
     '../utils/url',
@@ -16,6 +17,7 @@ define([
 ], function (
     langx,
     document,
+    noder,
     Tech, 
     Dom, 
     Url, 
@@ -448,7 +450,8 @@ define([
                 this.trigger('fullscreenerror', new Error('The video is not fullscreen'));
                 return;
             }
-            this.el_.webkitExitFullScreen();
+            //this.el_.webkitExitFullScreen();
+            noder.fullscreen(false);
         }
         requestPictureInPicture() {
             return this.el_.requestPictureInPicture();

@@ -1,5 +1,6 @@
 define([
     'skylark-langx-globals/document',
+    'skylark-domx',
     './component',
     ///'./mixins/evented',
     './utils/events',
@@ -40,6 +41,7 @@ define([
     './tech/html5'
 ], function (
     document,
+    domx,
     Component,
     Events, 
     Dom, 
@@ -1255,8 +1257,10 @@ define([
                     fsOptions = fullscreenOptions;
                 }
             }
-            if (this.fsApi_.requestFullscreen) {
-                const promise = this.el_[this.fsApi_.requestFullscreen](fsOptions);
+//            if (this.fsApi_.requestFullscreen) {
+//                const promise = this.el_[this.fsApi_.requestFullscreen](fsOptions);
+            if (domx.browser.support.fullscreen) {
+                const promise = domx.noder.fullscreen(this.el_);
                 if (promise) {
                     promise.then(() => this.isFullscreen(true), () => this.isFullscreen(false));
                 }
@@ -1297,7 +1301,8 @@ define([
         }
         exitFullscreenHelper_() {
             if (this.fsApi_.requestFullscreen) {
-                const promise = document[this.fsApi_.exitFullscreen]();
+                //const promise = document[this.fsApi_.exitFullscreen]();
+                const promise = domx.noder.fullscreen(false);
                 if (promise) {
                     promise.then(() => this.isFullscreen(false));
                 }

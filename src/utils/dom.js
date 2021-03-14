@@ -2,12 +2,11 @@ define([
     "skylark-langx-globals/window",
     "skylark-langx-globals/document",   
     "skylark-domx",
-    '../fullscreen-api',
     './log',
     './obj',
     './computed-style',
     './browser'
-], function (window,document,domx,fs, log, obj, computedStyle, browser) {
+], function (window,document,domx, log, obj, computedStyle, browser) {
     'use strict';
     function isNonBlankString(str) {
         return typeof str === 'string' && Boolean(str.trim());
@@ -207,7 +206,8 @@ define([
         const height = el.offsetHeight;
         let left = 0;
         let top = 0;
-        while (el.offsetParent && el !== document[fs.fullscreenElement]) {
+        ///while (el.offsetParent && el !== document[fs.fullscreenElement]) {
+        while (el.offsetParent && !domx.noder.isFullscreen(el)) {
             left += el.offsetLeft;
             top += el.offsetTop;
             el = el.offsetParent;
