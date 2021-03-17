@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define(["./obj"],function(n){"use strict";return function i(...t){const c={};return t.forEach(t=>{t&&n.each(t,(t,e)=>{n.isPlain(t)?(n.isPlain(c[e])||(c[e]={}),c[e]=i(c[e],t)):c[e]=t})}),c}});
+define(["skylark-langx","./obj"],function(n,r){"use strict";return function(...r){var i={};return n.mixin(i,...r,!0),i}});
 //# sourceMappingURL=../sourcemaps/utils/merge-options.js.map

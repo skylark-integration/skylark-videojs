@@ -1,5 +1,9 @@
-define(['./obj'], function (obj) {
+define([
+    "skylark-langx",
+    './obj'
+], function (langx,obj) {
     'use strict';
+    /*
     function mergeOptions(...sources) {
         const result = {};
         sources.forEach(source => {
@@ -20,4 +24,10 @@ define(['./obj'], function (obj) {
         return result;
     }
     return mergeOptions;
+    */
+    return function(...sources) {
+        var result = {};
+        langx.mixin(result,...sources,true);
+        return result;
+    }
 });

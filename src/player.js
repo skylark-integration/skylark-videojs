@@ -112,11 +112,11 @@ define([
         huge: Infinity
     };
     class Player extends Component {
-        constructor(tag, options, ready) {
+        _construct(tag, options, ready) {
             tag.id = tag.id || options.id || `vjs_video_${ Guid.newGUID() }`;
             options = obj.assign(Player.getTagSettings(tag), options);
             options.initChildren = false;
-            options.createEl = false;
+            ///options.createEl = false;
             options.evented = false;
             options.reportTouchActivity = false;
             if (!options.language) {
@@ -136,7 +136,12 @@ define([
                     }
                 }
             }
-            super(null, options, ready);
+
+            this.tag = tag;
+            this.tagAttributes = tag && Dom.getAttributes(tag);
+
+            super._construct(null, options, ready);
+
             this.boundDocumentFullscreenChange_ = e => this.documentFullscreenChange_(e);
             this.boundFullWindowOnEscKey_ = e => this.fullWindowOnEscKey(e);
             this.isFullscreen_ = false;
@@ -151,8 +156,6 @@ define([
             if (!this.options_ || !this.options_.techOrder || !this.options_.techOrder.length) {
                 throw new Error('No techOrder specified. Did you overwrite ' + 'videojs.options instead of just changing the ' + 'properties you want to override?');
             }
-            this.tag = tag;
-            this.tagAttributes = tag && Dom.getAttributes(tag);
             this.language(this.options_.language);
             if (options.languages) {
                 const languagesToLower = {};
@@ -184,7 +187,7 @@ define([
                 });
             }
             this.scrubbing_ = false;
-            this.el_ = this.createEl();
+            ///this.el_ = this.createEl();
             //evented(this, { eventBusKey: 'el_' });
             if (this.fsApi_.requestFullscreen) {
                 Events.on(document, this.fsApi_.fullscreenchange, this.boundDocumentFullscreenChange_);
@@ -243,6 +246,32 @@ define([
             this.listenTo('languagechange', this.handleLanguagechange);
             this.breakpoints(this.options_.breakpoints);
             this.responsive(this.options_.responsive);
+
+            log.info("The player is created.");
+        }
+
+        _init() {
+            super._init();
+
+            this.children_.unshift(this.tag);
+
+            this.addClass('vjs-paused');
+
+            if (window.VIDEOJS_NO_DYNAMIC_STYLE !== true) {
+                this.styleEl_ = stylesheet.createStyleElement('vjs-styles-dimensions');
+                const defaultsStyleEl = Dom.$('.vjs-styles-defaults');
+                const head = Dom.$('head');
+                head.insertBefore(this.styleEl_, defaultsStyleEl ? defaultsStyleEl.nextSibling : head.firstChild);
+            }
+            this.fill_ = false;
+            this.fluid_ = false;
+            this.width(this.options_.width);
+            this.height(this.options_.height);
+            this.fill(this.options_.fill);
+            this.fluid(this.options_.fluid);
+            this.aspectRatio(this.options_.aspectRatio);
+            this.crossOrigin(this.options_.crossOrigin || this.options_.crossorigin);
+
         }
         dispose() {
             this.trigger('dispose');
@@ -336,21 +365,7 @@ define([
             tag.id += '_html5_api';
             tag.className = 'vjs-tech';
             tag.player = el.player = this;
-            this.addClass('vjs-paused');
-            if (window.VIDEOJS_NO_DYNAMIC_STYLE !== true) {
-                this.styleEl_ = stylesheet.createStyleElement('vjs-styles-dimensions');
-                const defaultsStyleEl = Dom.$('.vjs-styles-defaults');
-                const head = Dom.$('head');
-                head.insertBefore(this.styleEl_, defaultsStyleEl ? defaultsStyleEl.nextSibling : head.firstChild);
-            }
-            this.fill_ = false;
-            this.fluid_ = false;
-            this.width(this.options_.width);
-            this.height(this.options_.height);
-            this.fill(this.options_.fill);
-            this.fluid(this.options_.fluid);
-            this.aspectRatio(this.options_.aspectRatio);
-            this.crossOrigin(this.options_.crossOrigin || this.options_.crossorigin);
+
             const links = tag.getElementsByTagName('a');
             for (let i = 0; i < links.length; i++) {
                 const linkEl = links.item(i);
@@ -362,7 +377,6 @@ define([
                 tag.parentNode.insertBefore(el, tag);
             }
             Dom.prependTo(tag, el);
-            this.children_.unshift(tag);
             this.el_.setAttribute('lang', this.language_);
             this.el_ = el;
             return el;
@@ -1001,7 +1015,7 @@ define([
                         this.tech_[method](arg);
                     }
                 } catch (e) {
-                    log(e);
+                    log.error(e);
                     throw e;
                 }
             }, true);
@@ -1019,15 +1033,15 @@ define([
                 return this.tech_[method]();
             } catch (e) {
                 if (this.tech_[method] === undefined) {
-                    log(`Video.js: ${ method } method not defined for ${ this.techName_ } playback technology.`, e);
+                    log.warn(`Video.js: ${ method } method not defined for ${ this.techName_ } playback technology.`, e);
                     throw e;
                 }
                 if (e.name === 'TypeError') {
-                    log(`Video.js: ${ method } unavailable on ${ this.techName_ } playback technology element.`, e);
+                    log.warn(`Video.js: ${ method } unavailable on ${ this.techName_ } playback technology element.`, e);
                     this.tech_.isReady_ = false;
                     throw e;
                 }
-                log(e);
+                log.error(e);
                 throw e;
             }
         }
@@ -2116,6 +2130,7 @@ define([
     Player.prototype.crossorigin = Player.prototype.crossOrigin;
     Player.players = {};
     const navigator = window.navigator;
+
     Player.prototype.options_ = {
         techOrder: Tech.defaultTechOrder_,
         html5: {},

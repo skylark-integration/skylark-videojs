@@ -1,4 +1,6 @@
-define([],function(){
+define([
+  "skylark-devices-keyboard"
+],function(keyboard){
   // Source: http://jsfiddle.net/vWx8V/
   // http://stackoverflow.com/questions/5603195/full-list-of-javascript-keycodes
 
@@ -175,6 +177,13 @@ define([],function(){
     codes[alias] = aliases[alias]
   }
 
-  return exports;
+  //return exports;
+
+  return {
+    codes : keyboard.codes,
+    names : keyboard.names,
+    aliases : keyboard.aliases,
+    isEventKey : keyboard.isEventKey
+  }
 
 });

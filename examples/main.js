@@ -71,6 +71,11 @@ requirejs.config({
             main: 'main'
          },
          {
+           name : "skylark-langx-logging",
+           location : "../node_modules/skylark-langx-logging/dist/uncompressed/skylark-langx-logging",
+            main: 'main'
+         },
+         {
            name : "skylark-langx-ns",
            location : "../node_modules/skylark-langx-ns/dist/uncompressed/skylark-langx-ns",
             main: 'main'
@@ -231,6 +236,11 @@ requirejs.config({
             location : "../node_modules/skylark-bootstrap3/dist/uncompressed/skylark-bootstrap3",
             main: 'main'
           },
+         {
+           name : "skylark-devices-keyboard" ,
+           location : "../node_modules/skylark-devices-keyboard/dist/uncompressed/skylark-devices-keyboard",
+            main: 'main'
+         },
          {
            name : "skylark-widgets-base",
            location : "../node_modules/skylark-widgets-base/dist/uncompressed/skylark-widgets-base",

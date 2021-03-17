@@ -5,5 +5,5 @@
  * @link www.skylarkjs.org
  * @license MIT
  */
-define(["./create-logger"],function(e){"use strict";const r=e("VIDEOJS");return r.createLogger=e,r});
+define(["skylark-langx-logging"],function(n){"use strict";return new n.Logger("VIDEOJS")});
 //# sourceMappingURL=../sourcemaps/utils/log.js.map

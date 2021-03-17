@@ -24,8 +24,10 @@
   "license": "MIT",
   "bugs": "https://github.com/skylarkjs/skylark/issues",
   "dependencies": {
+    "skylark-devices-keyboard": "git+https://github.com/skylark-devices/skylark-devices-keyboard.git",
     "skylark-domx": "git+https://github.com/skylark-domx/skylark-domx.git#master",
     "skylark-langx": "git+https://github.com/skylark-langx/skylark-langx.git#master",
+    "skylark-langx-logging": "git+https://github.com/skylark-langx/skylark-langx-logging.git",
     "skylark-net-http": "git+https://github.com/skylark-net/skylark-net-http.git#master",
     "skylark-videojs-vtt": "git+https://github.com/skylark-integration/skylark-videojs-vtt.git",
     "skylark-widgets-base": "git+https://github.com/skylark-widgets/skylark-widgets-base.git#master"

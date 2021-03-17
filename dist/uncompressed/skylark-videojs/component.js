@@ -29,195 +29,47 @@ define([
         }
     }
 
-    const NativeEvents = {
-            "drag": 2, // DragEvent
-            "dragend": 2, // DragEvent
-            "dragenter": 2, // DragEvent
-            "dragexit": 2, // DragEvent
-            "dragleave": 2, // DragEvent
-            "dragover": 2, // DragEvent
-            "dragstart": 2, // DragEvent
-            "drop": 2, // DragEvent
-
-            "abort": 3, // Event
-            "change": 3, // Event
-            "error": 3, // Event
-            "selectionchange": 3, // Event
-            "submit": 3, // Event
-            "reset": 3, // Event
-            'fullscreenchange':3,
-            'fullscreenerror':3,
-
-/*
-            'disablepictureinpicturechanged':3,
-            'ended':3,
-            'enterpictureinpicture':3,
-            'durationchange':3,
-            'leavepictureinpicture':3,
-            'loadstart' : 3,
-            'loadedmetadata':3,
-            'pause' : 3,
-            'play':3,
-            'posterchange':3,
-            'ratechange':3,
-            'seeking' : 3,
-            'sourceset':3,
-            'suspend':3,
-            'textdata':3,
-            'texttrackchange':3,
-            'timeupdate':3,
-            'volumechange':3,
-            'waiting' : 3,
-*/
-
-
-            "focus": 4, // FocusEvent
-            "blur": 4, // FocusEvent
-            "focusin": 4, // FocusEvent
-            "focusout": 4, // FocusEvent
-
-            "keydown": 5, // KeyboardEvent
-            "keypress": 5, // KeyboardEvent
-            "keyup": 5, // KeyboardEvent
-
-            "message": 6, // MessageEvent
-
-            "click": 7, // MouseEvent
-            "contextmenu": 7, // MouseEvent
-            "dblclick": 7, // MouseEvent
-            "mousedown": 7, // MouseEvent
-            "mouseup": 7, // MouseEvent
-            "mousemove": 7, // MouseEvent
-            "mouseover": 7, // MouseEvent
-            "mouseout": 7, // MouseEvent
-            "mouseenter": 7, // MouseEvent
-            "mouseleave": 7, // MouseEvent
-
-
-            "progress" : 11, //ProgressEvent
-
-            "textInput": 12, // TextEvent
-
-            "tap": 13,
-            "touchstart": 13, // TouchEvent
-            "touchmove": 13, // TouchEvent
-            "touchend": 13, // TouchEvent
-
-            "load": 14, // UIEvent
-            "resize": 14, // UIEvent
-            "select": 14, // UIEvent
-            "scroll": 14, // UIEvent
-            "unload": 14, // UIEvent,
-
-            "wheel": 15, // WheelEvent
-
-    };
 
     class Component extends Widget {
-        isNativeEvent(events) {
-            if (langx.isString(events)) {
-                return !!NativeEvents[events];
-            } else if (langx.isArray(events)) {
-                for (var i=0; i<events.length; i++) {
-                    if (NativeEvents[events[i]]) {
-                        return true;
-                    }
-                }
-                return false;
-            }            
-
-        }   
-
-        on(events, selector, data, callback, ctx, /*used internally*/ one) {
-            if (this.el_ && this.isNativeEvent(events)) {
-                eventer.on(this.el_,events,selector,data,callback,ctx,one);
-            } else {
-                super.on(events, selector, data, callback, ctx,  one);
-            }
-        }   
-
-        off(events, callback) {
-            if (this.el_ && this.isNativeEvent(events)) {
-                eventer.off(this.el_,events,callback);
-            } else {
-                super.off(events,callback);
-            }
-        }
-
-        listenTo (obj, event, callback, /*used internally*/ one) {
-            if (langx.isString(obj) || langx.isArray(obj)) {
-                one = callback;
-                callback = event;
-                event = obj;
-                if (this.el_ && this.isNativeEvent(event)) {
-                    eventer.on(this.el_,event,callback,this,one);
-                } else {
-                    this.on(event,callback,this,one);
-                }
-            } else {
-                if (obj.nodeType) {
-                    eventer.on(obj,event,callback,this,one)
-                } else {
-                    super.listenTo(obj,event,callback,one)
-                }                
-            }
-        }
-
-        unlistenTo(obj, event, callback) {
-            if (langx.isString(obj) || langx.isArray(obj)) {
-                callback = event;
-                event = obj;
-                if (this.el_ && this.isNativeEvent(event)) {
-                    eventer.off(this.el_,event,callback);
-                } else {
-                    this.off(event,callback);                   
-                }
-            } else {
-                if (obj.nodeType) {
-                    eventer.off(obj,event,callback)
-                } else {
-                    super.unlistenTo(obj,event,callback)
-                }
-            }
-        }
-
-        _create() {
-
-        }
-
-
         _construct(player, options, ready) {
-            /*
-            var el;
-            if (options.el) {
-               el = options.el;
-            } else if (options.createEl !== false) {
-                el = this.createEl();
-            }
-            super(el);
-            */
-
             if (!player && this.play) {
                 this.player_ = player = this;
             } else {
                 this.player_ = player;
             }
+            this.options_ = mergeOptions({}, this.options_);
+            this.options_ = mergeOptions(this.options_, options);
+            this.ready_ = ready;
+
+            super._construct(this.options_,ready);
+
+        }
+
+        _create() {
+            var options = this.options_ = this.options;
+
+            if (options.el) {
+               this.el_ = options.el;
+            } else if (options.createEl !== false) {
+                this.el_ = this.createEl();
+            }
+
+            return this.elmx(this.el_)
+        }
+
+        _init() {
+            var options = this.options_,
+                player = this.player_;
+
             this.isDisposed_ = false;
             this.parentComponent_ = null;
-            this.options_ = mergeOptions({}, this.options_);
-            options = this.options_ = mergeOptions(this.options_, options);
             this.id_ = options.id || options.el && options.el.id;
             if (!this.id_) {
                 const id = player && player.id && player.id() || 'no_player';
                 this.id_ = `${ id }_component_${ Guid.newGUID() }`;
             }
             this.name_ = options.name || null;
-            if (options.el) {
-               this.el_ = options.el;
-            } else if (options.createEl !== false) {
-                this.el_ = this.createEl();
-            }
-            //this.el_ = this._elm;
+
 
             if (options.evented !== false) {
                 ///evented(this, { eventBusKey: this.el_ ? 'el_' : null });
@@ -227,7 +79,7 @@ define([
             }
 
 
-            stateful(this, this.constructor.defaultState);
+            ///stateful(this, this.constructor.defaultState);
             this.children_ = [];
             this.childIndex_ = {};
             this.childNameIndex_ = {};
@@ -239,11 +91,13 @@ define([
             if (options.initChildren !== false) {
                 this.initChildren();
             }
-            this.ready(ready);
+            this.ready(this.ready_);
             if (options.reportTouchActivity !== false) {
                 this.enableTouchActivity();
             }
+
         }
+
         dispose() {
             if (this.isDisposed_) {
                 return;
@@ -520,6 +374,7 @@ define([
         $$(selector, context) {
             return Dom.$$(selector, context || this.contentEl());
         }
+/*
         hasClass(classToCheck) {
             return Dom.hasClass(this.el_, classToCheck);
         }
@@ -538,12 +393,14 @@ define([
         hide() {
             this.addClass('vjs-hidden');
         }
+*/  
         lockShowing() {
             this.addClass('vjs-lock-showing');
         }
         unlockShowing() {
             this.removeClass('vjs-lock-showing');
         }
+/*
         getAttribute(attribute) {
             return Dom.getAttribute(this.el_, attribute);
         }
@@ -553,6 +410,7 @@ define([
         removeAttribute(attribute) {
             Dom.removeAttribute(this.el_, attribute);
         }
+*/
         width(num, skipListeners) {
             return this.dimension('width', num, skipListeners);
         }
@@ -615,12 +473,14 @@ define([
         currentHeight() {
             return this.currentDimension('height');
         }
+/*
         focus() {
             this.el_.focus();
         }
         blur() {
             this.el_.blur();
         }
+*/
         handleKeyDown(event) {
             if (this.player_) {
                 event.stopPropagation();
@@ -843,6 +703,12 @@ define([
             return Component.components_[name];
         }
     }
+
+    Component.prototype.getAttribute = Component.prototype.getAttr;
+    Component.prototype.setAttribute = Component.prototype.getAttr;
+    Component.prototype.removeAttribute = Component.prototype.removeAttr;
+
+
     Component.prototype.supportsRaf_ = typeof window.requestAnimationFrame === 'function' && typeof window.cancelAnimationFrame === 'function';
     Component.registerComponent('Component', Component);
     return Component;

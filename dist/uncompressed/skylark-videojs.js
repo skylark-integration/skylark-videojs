@@ -450,94 +450,16 @@ define('skylark-net-http/xhr',[
         return Xhr;
     })();
 
-	return http.Xhr = Xhr;	
+    return http.Xhr = Xhr;  
 });
-define('skylark-videojs/utils/create-logger',[], function () {
+define('skylark-videojs/utils/log',['skylark-langx-logging'], function (logging) {
     'use strict';
-    let history = [];
-    const LogByTypeFactory = (name, log) => (type, level, args) => {
-        const lvl = log.levels[level];
-        const lvlRegExp = new RegExp(`^(${ lvl })$`);
-        if (type !== 'log') {
-            args.unshift(type.toUpperCase() + ':');
-        }
-        args.unshift(name + ':');
-        if (history) {
-            history.push([].concat(args));
-            const splice = history.length - 1000;
-            history.splice(0, splice > 0 ? splice : 0);
-        }
-        if (!window.console) {
-            return;
-        }
-        let fn = window.console[type];
-        if (!fn && type === 'debug') {
-            fn = window.console.info || window.console.log;
-        }
-        if (!fn || !lvl || !lvlRegExp.test(type)) {
-            return;
-        }
-        fn[Array.isArray(args) ? 'apply' : 'call'](window.console, args);
-    };
-    return function createLogger(name) {
-        let level = 'info';
-        let logByType;
-        const log = function (...args) {
-            logByType('log', level, args);
-        };
-        logByType = LogByTypeFactory(name, log);
-        log.createLogger = subname => createLogger(name + ': ' + subname);
-        log.levels = {
-            all: 'debug|log|warn|error',
-            off: '',
-            debug: 'debug|log|warn|error',
-            info: 'log|warn|error',
-            warn: 'warn|error',
-            error: 'error',
-            DEFAULT: level
-        };
-        log.level = lvl => {
-            if (typeof lvl === 'string') {
-                if (!log.levels.hasOwnProperty(lvl)) {
-                    throw new Error(`"${ lvl }" in not a valid log level`);
-                }
-                level = lvl;
-            }
-            return level;
-        };
-        log.history = () => history ? [].concat(history) : [];
-        log.history.filter = fname => {
-            return (history || []).filter(historyItem => {
-                return new RegExp(`.*${ fname }.*`).test(historyItem[0]);
-            });
-        };
-        log.history.clear = () => {
-            if (history) {
-                history.length = 0;
-            }
-        };
-        log.history.disable = () => {
-            if (history !== null) {
-                history.length = 0;
-                history = null;
-            }
-        };
-        log.history.enable = () => {
-            if (history === null) {
-                history = [];
-            }
-        };
-        log.error = (...args) => logByType('error', level, args);
-        log.warn = (...args) => logByType('warn', level, args);
-        log.debug = (...args) => logByType('debug', level, args);
-        return log;
-    };
-});
-define('skylark-videojs/utils/log',['./create-logger'], function (createLogger) {
-    'use strict';
-    const log = createLogger('VIDEOJS');
+    /*
+    const log = new('VIDEOJS');
     log.createLogger = createLogger;
     return log;
+    */
+    return new logging.Logger('VIDEOJS');
 });
 define('skylark-videojs/utils/obj',[
     "skylark-langx"
@@ -1311,8 +1233,12 @@ define('skylark-videojs/utils/string-cases',[],function () {
         titleCaseEquals: titleCaseEquals
     };
 });
-define('skylark-videojs/utils/merge-options',['./obj'], function (obj) {
+define('skylark-videojs/utils/merge-options',[
+    "skylark-langx",
+    './obj'
+], function (langx,obj) {
     'use strict';
+    /*
     function mergeOptions(...sources) {
         const result = {};
         sources.forEach(source => {
@@ -1333,6 +1259,12 @@ define('skylark-videojs/utils/merge-options',['./obj'], function (obj) {
         return result;
     }
     return mergeOptions;
+    */
+    return function(...sources) {
+        var result = {};
+        langx.mixin(result,...sources,true);
+        return result;
+    }
 });
 define('skylark-videojs/utils/map',[], function () {
     'use strict';
@@ -1417,195 +1349,47 @@ define('skylark-videojs/component',[
         }
     }
 
-    const NativeEvents = {
-            "drag": 2, // DragEvent
-            "dragend": 2, // DragEvent
-            "dragenter": 2, // DragEvent
-            "dragexit": 2, // DragEvent
-            "dragleave": 2, // DragEvent
-            "dragover": 2, // DragEvent
-            "dragstart": 2, // DragEvent
-            "drop": 2, // DragEvent
-
-            "abort": 3, // Event
-            "change": 3, // Event
-            "error": 3, // Event
-            "selectionchange": 3, // Event
-            "submit": 3, // Event
-            "reset": 3, // Event
-            'fullscreenchange':3,
-            'fullscreenerror':3,
-
-/*
-            'disablepictureinpicturechanged':3,
-            'ended':3,
-            'enterpictureinpicture':3,
-            'durationchange':3,
-            'leavepictureinpicture':3,
-            'loadstart' : 3,
-            'loadedmetadata':3,
-            'pause' : 3,
-            'play':3,
-            'posterchange':3,
-            'ratechange':3,
-            'seeking' : 3,
-            'sourceset':3,
-            'suspend':3,
-            'textdata':3,
-            'texttrackchange':3,
-            'timeupdate':3,
-            'volumechange':3,
-            'waiting' : 3,
-*/
-
-
-            "focus": 4, // FocusEvent
-            "blur": 4, // FocusEvent
-            "focusin": 4, // FocusEvent
-            "focusout": 4, // FocusEvent
-
-            "keydown": 5, // KeyboardEvent
-            "keypress": 5, // KeyboardEvent
-            "keyup": 5, // KeyboardEvent
-
-            "message": 6, // MessageEvent
-
-            "click": 7, // MouseEvent
-            "contextmenu": 7, // MouseEvent
-            "dblclick": 7, // MouseEvent
-            "mousedown": 7, // MouseEvent
-            "mouseup": 7, // MouseEvent
-            "mousemove": 7, // MouseEvent
-            "mouseover": 7, // MouseEvent
-            "mouseout": 7, // MouseEvent
-            "mouseenter": 7, // MouseEvent
-            "mouseleave": 7, // MouseEvent
-
-
-            "progress" : 11, //ProgressEvent
-
-            "textInput": 12, // TextEvent
-
-            "tap": 13,
-            "touchstart": 13, // TouchEvent
-            "touchmove": 13, // TouchEvent
-            "touchend": 13, // TouchEvent
-
-            "load": 14, // UIEvent
-            "resize": 14, // UIEvent
-            "select": 14, // UIEvent
-            "scroll": 14, // UIEvent
-            "unload": 14, // UIEvent,
-
-            "wheel": 15, // WheelEvent
-
-    };
 
     class Component extends Widget {
-        isNativeEvent(events) {
-            if (langx.isString(events)) {
-                return !!NativeEvents[events];
-            } else if (langx.isArray(events)) {
-                for (var i=0; i<events.length; i++) {
-                    if (NativeEvents[events[i]]) {
-                        return true;
-                    }
-                }
-                return false;
-            }            
-
-        }   
-
-        on(events, selector, data, callback, ctx, /*used internally*/ one) {
-            if (this.el_ && this.isNativeEvent(events)) {
-                eventer.on(this.el_,events,selector,data,callback,ctx,one);
-            } else {
-                super.on(events, selector, data, callback, ctx,  one);
-            }
-        }   
-
-        off(events, callback) {
-            if (this.el_ && this.isNativeEvent(events)) {
-                eventer.off(this.el_,events,callback);
-            } else {
-                super.off(events,callback);
-            }
-        }
-
-        listenTo (obj, event, callback, /*used internally*/ one) {
-            if (langx.isString(obj) || langx.isArray(obj)) {
-                one = callback;
-                callback = event;
-                event = obj;
-                if (this.el_ && this.isNativeEvent(event)) {
-                    eventer.on(this.el_,event,callback,this,one);
-                } else {
-                    this.on(event,callback,this,one);
-                }
-            } else {
-                if (obj.nodeType) {
-                    eventer.on(obj,event,callback,this,one)
-                } else {
-                    super.listenTo(obj,event,callback,one)
-                }                
-            }
-        }
-
-        unlistenTo(obj, event, callback) {
-            if (langx.isString(obj) || langx.isArray(obj)) {
-                callback = event;
-                event = obj;
-                if (this.el_ && this.isNativeEvent(event)) {
-                    eventer.off(this.el_,event,callback);
-                } else {
-                    this.off(event,callback);                   
-                }
-            } else {
-                if (obj.nodeType) {
-                    eventer.off(obj,event,callback)
-                } else {
-                    super.unlistenTo(obj,event,callback)
-                }
-            }
-        }
-
-        _create() {
-
-        }
-
-
         _construct(player, options, ready) {
-            /*
-            var el;
-            if (options.el) {
-               el = options.el;
-            } else if (options.createEl !== false) {
-                el = this.createEl();
-            }
-            super(el);
-            */
-
             if (!player && this.play) {
                 this.player_ = player = this;
             } else {
                 this.player_ = player;
             }
+            this.options_ = mergeOptions({}, this.options_);
+            this.options_ = mergeOptions(this.options_, options);
+            this.ready_ = ready;
+
+            super._construct(this.options_,ready);
+
+        }
+
+        _create() {
+            var options = this.options_ = this.options;
+
+            if (options.el) {
+               this.el_ = options.el;
+            } else if (options.createEl !== false) {
+                this.el_ = this.createEl();
+            }
+
+            return this.elmx(this.el_)
+        }
+
+        _init() {
+            var options = this.options_,
+                player = this.player_;
+
             this.isDisposed_ = false;
             this.parentComponent_ = null;
-            this.options_ = mergeOptions({}, this.options_);
-            options = this.options_ = mergeOptions(this.options_, options);
             this.id_ = options.id || options.el && options.el.id;
             if (!this.id_) {
                 const id = player && player.id && player.id() || 'no_player';
                 this.id_ = `${ id }_component_${ Guid.newGUID() }`;
             }
             this.name_ = options.name || null;
-            if (options.el) {
-               this.el_ = options.el;
-            } else if (options.createEl !== false) {
-                this.el_ = this.createEl();
-            }
-            //this.el_ = this._elm;
+
 
             if (options.evented !== false) {
                 ///evented(this, { eventBusKey: this.el_ ? 'el_' : null });
@@ -1615,7 +1399,7 @@ define('skylark-videojs/component',[
             }
 
 
-            stateful(this, this.constructor.defaultState);
+            ///stateful(this, this.constructor.defaultState);
             this.children_ = [];
             this.childIndex_ = {};
             this.childNameIndex_ = {};
@@ -1627,11 +1411,13 @@ define('skylark-videojs/component',[
             if (options.initChildren !== false) {
                 this.initChildren();
             }
-            this.ready(ready);
+            this.ready(this.ready_);
             if (options.reportTouchActivity !== false) {
                 this.enableTouchActivity();
             }
+
         }
+
         dispose() {
             if (this.isDisposed_) {
                 return;
@@ -1908,6 +1694,7 @@ define('skylark-videojs/component',[
         $$(selector, context) {
             return Dom.$$(selector, context || this.contentEl());
         }
+/*
         hasClass(classToCheck) {
             return Dom.hasClass(this.el_, classToCheck);
         }
@@ -1926,12 +1713,14 @@ define('skylark-videojs/component',[
         hide() {
             this.addClass('vjs-hidden');
         }
+*/  
         lockShowing() {
             this.addClass('vjs-lock-showing');
         }
         unlockShowing() {
             this.removeClass('vjs-lock-showing');
         }
+/*
         getAttribute(attribute) {
             return Dom.getAttribute(this.el_, attribute);
         }
@@ -1941,6 +1730,7 @@ define('skylark-videojs/component',[
         removeAttribute(attribute) {
             Dom.removeAttribute(this.el_, attribute);
         }
+*/
         width(num, skipListeners) {
             return this.dimension('width', num, skipListeners);
         }
@@ -2003,12 +1793,14 @@ define('skylark-videojs/component',[
         currentHeight() {
             return this.currentDimension('height');
         }
+/*
         focus() {
             this.el_.focus();
         }
         blur() {
             this.el_.blur();
         }
+*/
         handleKeyDown(event) {
             if (this.player_) {
                 event.stopPropagation();
@@ -2231,6 +2023,12 @@ define('skylark-videojs/component',[
             return Component.components_[name];
         }
     }
+
+    Component.prototype.getAttribute = Component.prototype.getAttr;
+    Component.prototype.setAttribute = Component.prototype.getAttr;
+    Component.prototype.removeAttribute = Component.prototype.removeAttr;
+
+
     Component.prototype.supportsRaf_ = typeof window.requestAnimationFrame === 'function' && typeof window.cancelAnimationFrame === 'function';
     Component.registerComponent('Component', Component);
     return Component;
@@ -2861,7 +2659,9 @@ define('skylark-videojs/tracks/text-track-list-converter',[],function () {
         trackToJson_
     };
 });
-define('skylark-videojs/utils/keycode',[],function(){
+define('skylark-videojs/utils/keycode',[
+  "skylark-devices-keyboard"
+],function(keyboard){
   // Source: http://jsfiddle.net/vWx8V/
   // http://stackoverflow.com/questions/5603195/full-list-of-javascript-keycodes
 
@@ -3038,7 +2838,14 @@ define('skylark-videojs/utils/keycode',[],function(){
     codes[alias] = aliases[alias]
   }
 
-  return exports;
+  //return exports;
+
+  return {
+    codes : keyboard.codes,
+    names : keyboard.names,
+    aliases : keyboard.aliases,
+    isEventKey : keyboard.isEventKey
+  }
 
 });
 define('skylark-videojs/modal-dialog',[
@@ -10497,11 +10304,11 @@ define('skylark-videojs/player',[
         huge: Infinity
     };
     class Player extends Component {
-        constructor(tag, options, ready) {
+        _construct(tag, options, ready) {
             tag.id = tag.id || options.id || `vjs_video_${ Guid.newGUID() }`;
             options = obj.assign(Player.getTagSettings(tag), options);
             options.initChildren = false;
-            options.createEl = false;
+            ///options.createEl = false;
             options.evented = false;
             options.reportTouchActivity = false;
             if (!options.language) {
@@ -10521,7 +10328,12 @@ define('skylark-videojs/player',[
                     }
                 }
             }
-            super(null, options, ready);
+
+            this.tag = tag;
+            this.tagAttributes = tag && Dom.getAttributes(tag);
+
+            super._construct(null, options, ready);
+
             this.boundDocumentFullscreenChange_ = e => this.documentFullscreenChange_(e);
             this.boundFullWindowOnEscKey_ = e => this.fullWindowOnEscKey(e);
             this.isFullscreen_ = false;
@@ -10536,8 +10348,6 @@ define('skylark-videojs/player',[
             if (!this.options_ || !this.options_.techOrder || !this.options_.techOrder.length) {
                 throw new Error('No techOrder specified. Did you overwrite ' + 'videojs.options instead of just changing the ' + 'properties you want to override?');
             }
-            this.tag = tag;
-            this.tagAttributes = tag && Dom.getAttributes(tag);
             this.language(this.options_.language);
             if (options.languages) {
                 const languagesToLower = {};
@@ -10569,7 +10379,7 @@ define('skylark-videojs/player',[
                 });
             }
             this.scrubbing_ = false;
-            this.el_ = this.createEl();
+            ///this.el_ = this.createEl();
             //evented(this, { eventBusKey: 'el_' });
             if (this.fsApi_.requestFullscreen) {
                 Events.on(document, this.fsApi_.fullscreenchange, this.boundDocumentFullscreenChange_);
@@ -10628,6 +10438,32 @@ define('skylark-videojs/player',[
             this.listenTo('languagechange', this.handleLanguagechange);
             this.breakpoints(this.options_.breakpoints);
             this.responsive(this.options_.responsive);
+
+            log.info("The player is created.");
+        }
+
+        _init() {
+            super._init();
+
+            this.children_.unshift(this.tag);
+
+            this.addClass('vjs-paused');
+
+            if (window.VIDEOJS_NO_DYNAMIC_STYLE !== true) {
+                this.styleEl_ = stylesheet.createStyleElement('vjs-styles-dimensions');
+                const defaultsStyleEl = Dom.$('.vjs-styles-defaults');
+                const head = Dom.$('head');
+                head.insertBefore(this.styleEl_, defaultsStyleEl ? defaultsStyleEl.nextSibling : head.firstChild);
+            }
+            this.fill_ = false;
+            this.fluid_ = false;
+            this.width(this.options_.width);
+            this.height(this.options_.height);
+            this.fill(this.options_.fill);
+            this.fluid(this.options_.fluid);
+            this.aspectRatio(this.options_.aspectRatio);
+            this.crossOrigin(this.options_.crossOrigin || this.options_.crossorigin);
+
         }
         dispose() {
             this.trigger('dispose');
@@ -10721,21 +10557,7 @@ define('skylark-videojs/player',[
             tag.id += '_html5_api';
             tag.className = 'vjs-tech';
             tag.player = el.player = this;
-            this.addClass('vjs-paused');
-            if (window.VIDEOJS_NO_DYNAMIC_STYLE !== true) {
-                this.styleEl_ = stylesheet.createStyleElement('vjs-styles-dimensions');
-                const defaultsStyleEl = Dom.$('.vjs-styles-defaults');
-                const head = Dom.$('head');
-                head.insertBefore(this.styleEl_, defaultsStyleEl ? defaultsStyleEl.nextSibling : head.firstChild);
-            }
-            this.fill_ = false;
-            this.fluid_ = false;
-            this.width(this.options_.width);
-            this.height(this.options_.height);
-            this.fill(this.options_.fill);
-            this.fluid(this.options_.fluid);
-            this.aspectRatio(this.options_.aspectRatio);
-            this.crossOrigin(this.options_.crossOrigin || this.options_.crossorigin);
+
             const links = tag.getElementsByTagName('a');
             for (let i = 0; i < links.length; i++) {
                 const linkEl = links.item(i);
@@ -10747,7 +10569,6 @@ define('skylark-videojs/player',[
                 tag.parentNode.insertBefore(el, tag);
             }
             Dom.prependTo(tag, el);
-            this.children_.unshift(tag);
             this.el_.setAttribute('lang', this.language_);
             this.el_ = el;
             return el;
@@ -11386,7 +11207,7 @@ define('skylark-videojs/player',[
                         this.tech_[method](arg);
                     }
                 } catch (e) {
-                    log(e);
+                    log.error(e);
                     throw e;
                 }
             }, true);
@@ -11404,15 +11225,15 @@ define('skylark-videojs/player',[
                 return this.tech_[method]();
             } catch (e) {
                 if (this.tech_[method] === undefined) {
-                    log(`Video.js: ${ method } method not defined for ${ this.techName_ } playback technology.`, e);
+                    log.warn(`Video.js: ${ method } method not defined for ${ this.techName_ } playback technology.`, e);
                     throw e;
                 }
                 if (e.name === 'TypeError') {
-                    log(`Video.js: ${ method } unavailable on ${ this.techName_ } playback technology element.`, e);
+                    log.warn(`Video.js: ${ method } unavailable on ${ this.techName_ } playback technology element.`, e);
                     this.tech_.isReady_ = false;
                     throw e;
                 }
-                log(e);
+                log.error(e);
                 throw e;
             }
         }
@@ -12501,6 +12322,7 @@ define('skylark-videojs/player',[
     Player.prototype.crossorigin = Player.prototype.crossOrigin;
     Player.players = {};
     const navigator = window.navigator;
+
     Player.prototype.options_ = {
         techOrder: Tech.defaultTechOrder_,
         html5: {},

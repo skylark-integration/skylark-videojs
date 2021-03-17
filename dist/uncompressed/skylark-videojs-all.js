@@ -2703,17 +2703,12 @@ define('skylark-langx-events/Listener',[
                 }
 
                 var listeningEvents = listening.events;
-
                 for (var eventName in listeningEvents) {
                     if (event && event != eventName) {
                         continue;
                     }
 
                     var listeningEvent = listeningEvents[eventName];
-
-                    if (!listeningEvent) { 
-                        continue;
-                    }
 
                     for (var j = 0; j < listeningEvent.length; j++) {
                         if (!callback || callback == listeningEvent[i]) {
@@ -3361,7 +3356,7 @@ define('skylark-net-http/xhr',[
         return Xhr;
     })();
 
-	return http.Xhr = Xhr;	
+    return http.Xhr = Xhr;  
 });
 define('skylark-langx-globals/document',[
 	"./globals"
@@ -19691,13 +19686,42 @@ define('skylark-domx/main',[
 ;
 define('skylark-domx', ['skylark-domx/main'], function (main) { return main; });
 
-define('skylark-videojs/utils/create-logger',[], function () {
+define('skylark-langx-logging/logging',[
+  "skylark-langx-ns"
+],function(skylark){
+
+
+    return skylark.attach("langx.logging",{
+
+    });
+});
+define('skylark-langx-logging/levels',[
+	"./logging"
+],function(logging){
+    return logging.levels = {
+	    all: 'debug|info|warn|error',
+	    off: '',
+	    debug: 'debug|info|warn|error',
+	    info: 'info|warn|error',
+	    warn: 'warn|error',
+	    error: 'error',
+	    DEFAULT: "info"
+    };	
+});
+define('skylark-langx-logging/Logger',[
+    "skylark-langx-objects",
+    "skylark-langx-constructs/klass",
+    "./logging",
+    "./levels"
+],function(objects,klass,logging,levels){
     'use strict';
+
     let history = [];
-    const LogByTypeFactory = (name, log) => (type, level, args) => {
-        const lvl = log.levels[level];
+ 
+    const LogByTypeFactory = (name) => (type, level, args) => {
+        const lvl = levels[level];
         const lvlRegExp = new RegExp(`^(${ lvl })$`);
-        if (type !== 'log') {
+        if (type !== 'debug') {
             args.unshift(type.toUpperCase() + ':');
         }
         args.unshift(name + ':');
@@ -19718,65 +19742,118 @@ define('skylark-videojs/utils/create-logger',[], function () {
         }
         fn[Array.isArray(args) ? 'apply' : 'call'](window.console, args);
     };
-    return function createLogger(name) {
-        let level = 'info';
-        let logByType;
-        const log = function (...args) {
-            logByType('log', level, args);
-        };
-        logByType = LogByTypeFactory(name, log);
-        log.createLogger = subname => createLogger(name + ': ' + subname);
-        log.levels = {
-            all: 'debug|log|warn|error',
-            off: '',
-            debug: 'debug|log|warn|error',
-            info: 'log|warn|error',
-            warn: 'warn|error',
-            error: 'error',
-            DEFAULT: level
-        };
-        log.level = lvl => {
+
+    var Logger = klass({
+        _level : "info",
+
+        _construct : function(name) {
+            this.name = name;
+
+            this._logByType = LogByTypeFactory(name);
+        },
+
+        level : function(lvl) {
             if (typeof lvl === 'string') {
-                if (!log.levels.hasOwnProperty(lvl)) {
+                if (!levels.hasOwnProperty(lvl)) {
                     throw new Error(`"${ lvl }" in not a valid log level`);
                 }
-                level = lvl;
+                this._level = lvl;
             }
-            return level;
-        };
-        log.history = () => history ? [].concat(history) : [];
-        log.history.filter = fname => {
+            return this._level;
+        },
+
+        error : function(...args){ 
+            this._logByType('error', this._level, args);
+        },
+
+        warn : function(...args){ 
+            this._logByType('warn', this._level, args);
+        },
+
+        debug : function(...args){ 
+            this._logByType('debug', this._level, args);
+        },
+
+        info : function(...args){ 
+            this._logByType('info', this._level, args);
+        },
+
+        history : function() {
+            return history ? [].concat(history) : [];
+        },
+
+        createLogger : function(subname) {
+            return new Logger(this.name ? this.name  + ': ' + subname : subname);   
+        }
+
+    });
+
+
+    objects.mixin(Logger.prototype.history,{
+        enable : function() {
+           if (history === null) {
+                history = [];
+            }            
+        },
+        
+        filter : function(fname) {
             return (history || []).filter(historyItem => {
                 return new RegExp(`.*${ fname }.*`).test(historyItem[0]);
             });
-        };
-        log.history.clear = () => {
+        },
+        clear : function() {
             if (history) {
                 history.length = 0;
             }
-        };
-        log.history.disable = () => {
+        },
+        disable : function()  {
             if (history !== null) {
                 history.length = 0;
                 history = null;
             }
-        };
-        log.history.enable = () => {
-            if (history === null) {
-                history = [];
-            }
-        };
-        log.error = (...args) => logByType('error', level, args);
-        log.warn = (...args) => logByType('warn', level, args);
-        log.debug = (...args) => logByType('debug', level, args);
-        return log;
-    };
+        }
+    });
+
+    Logger.root = new Logger("");
+
+    return logging.Logger = Logger;
+
 });
-define('skylark-videojs/utils/log',['./create-logger'], function (createLogger) {
+define('skylark-langx-logging/main',[
+	"./logging",
+	"./Logger"
+],function(logging,Logger){
+	let rootLogger = Logger.root;
+
+	logging.debug = function(...args) {
+		rootLogger.debug(...args);
+	};
+
+	logging.info = function(...args) {
+		rootLogger.debug(...args);
+	};
+
+	logging.warn = function(...args) {
+		rootLogger.debug(...args);
+	};
+
+	logging.error = function(...args) {
+		rootLogger.debug(...args);
+	};
+
+
+	return logging;
+});
+define('skylark-langx-logging', ['skylark-langx-logging/main'], function (main) { return main; });
+
+define('skylark-videojs/utils/log',['skylark-langx-logging'], function (logging) {
     'use strict';
-    const log = createLogger('VIDEOJS');
+    /*
+    const log = new('VIDEOJS');
     log.createLogger = createLogger;
     return log;
+    */
+    return new logging.Logger('VIDEOJS');
 });
 define('skylark-langx/main',[
     "./langx"
@@ -21183,7 +21260,7 @@ define('skylark-net-http/Xhr',[
         return Xhr;
     })();
 
-	return http.Xhr = Xhr;	
+    return http.Xhr = Xhr;  
 });
 define('skylark-net-http/Upload',[
     "skylark-langx-types",
@@ -22334,9 +22411,93 @@ define('skylark-widgets-base/Widget',[
   "./skins/SkinManager"
 ],function(skylark,types,objects,events,Vector2,browser,datax,eventer,noder,files,geom,elmx,$,fx, plugins,HashMap,base,SkinManager){
 
-/*---------------------------------------------------------------------------------*/
+     const NativeEvents = {
+            "drag": 2, // DragEvent
+            "dragend": 2, // DragEvent
+            "dragenter": 2, // DragEvent
+            "dragexit": 2, // DragEvent
+            "dragleave": 2, // DragEvent
+            "dragover": 2, // DragEvent
+            "dragstart": 2, // DragEvent
+            "drop": 2, // DragEvent
 
-  var Widget = plugins.Plugin.inherit({
+            "abort": 3, // Event
+            "change": 3, // Event
+            "error": 3, // Event
+            "selectionchange": 3, // Event
+            "submit": 3, // Event
+            "reset": 3, // Event
+            'fullscreenchange':3,
+            'fullscreenerror':3,
+
+/*
+            'disablepictureinpicturechanged':3,
+            'ended':3,
+            'enterpictureinpicture':3,
+            'durationchange':3,
+            'leavepictureinpicture':3,
+            'loadstart' : 3,
+            'loadedmetadata':3,
+            'pause' : 3,
+            'play':3,
+            'posterchange':3,
+            'ratechange':3,
+            'seeking' : 3,
+            'sourceset':3,
+            'suspend':3,
+            'textdata':3,
+            'texttrackchange':3,
+            'timeupdate':3,
+            'volumechange':3,
+            'waiting' : 3,
+*/
+
+
+            "focus": 4, // FocusEvent
+            "blur": 4, // FocusEvent
+            "focusin": 4, // FocusEvent
+            "focusout": 4, // FocusEvent
+
+            "keydown": 5, // KeyboardEvent
+            "keypress": 5, // KeyboardEvent
+            "keyup": 5, // KeyboardEvent
+
+            "message": 6, // MessageEvent
+
+            "click": 7, // MouseEvent
+            "contextmenu": 7, // MouseEvent
+            "dblclick": 7, // MouseEvent
+            "mousedown": 7, // MouseEvent
+            "mouseup": 7, // MouseEvent
+            "mousemove": 7, // MouseEvent
+            "mouseover": 7, // MouseEvent
+            "mouseout": 7, // MouseEvent
+            "mouseenter": 7, // MouseEvent
+            "mouseleave": 7, // MouseEvent
+
+
+            "progress" : 11, //ProgressEvent
+
+            "textInput": 12, // TextEvent
+
+            "tap": 13,
+            "touchstart": 13, // TouchEvent
+            "touchmove": 13, // TouchEvent
+            "touchend": 13, // TouchEvent
+
+            "load": 14, // UIEvent
+            "resize": 14, // UIEvent
+            "select": 14, // UIEvent
+            "scroll": 14, // UIEvent
+            "unload": 14, // UIEvent,
+
+            "wheel": 15, // WheelEvent
+
+    };
+ 
+  const Plugin = plugins.Plugin;
+
+  var Widget = Plugin.inherit({
     klassName: "Widget",
 
     _construct : function(parent,elm,options) {
@@ -22504,6 +22665,74 @@ define('skylark-widgets-base/Widget',[
      */
     _startup : function() {
 
+    },
+
+
+    isNativeEvent : function(events) {
+        if (types.isString(events)) {
+            return !!NativeEvents[events];
+        } else if (types.isArray(events)) {
+            for (var i=0; i<events.length; i++) {
+                if (NativeEvents[events[i]]) {
+                    return true;
+                }
+            }
+            return false;
+        }            
+
+    },   
+
+    on : function(events, selector, data, callback, ctx, /*used internally*/ one) {
+        if (this.el_ && this.isNativeEvent(events)) {
+            eventer.on(this.el_,events,selector,data,callback,ctx,one);
+        } else {
+            Plugin.prototype.on.call(this,events, selector, data, callback, ctx,  one);
+        }
+    },   
+
+    off : function(events, callback) {
+        if (this.el_ && this.isNativeEvent(events)) {
+            eventer.off(this.el_,events,callback);
+        } else {
+            Plugin.prototype.off.call(this,events,callback);
+        }
+    },
+
+    listenTo : function(obj, event, callback, /*used internally*/ one) {
+        if (types.isString(obj) || types.isArray(obj)) {
+            one = callback;
+            callback = event;
+            event = obj;
+            if (this.el_ && this.isNativeEvent(event)) {
+                eventer.on(this.el_,event,callback,this,one);
+            } else {
+                this.on(event,callback,this,one);
+            }
+        } else {
+            if (obj.nodeType) {
+                eventer.on(obj,event,callback,this,one)
+            } else {
+                Plugin.prototype.listenTo.call(this,obj,event,callback,one)
+            }                
+        }
+    },
+
+    unlistenTo : function(obj, event, callback) {
+        if (types.isString(obj) || types.isArray(obj)) {
+            callback = event;
+            event = obj;
+            if (this.el_ && this.isNativeEvent(event)) {
+                eventer.off(this.el_,event,callback);
+            } else {
+                this.off(event,callback);                   
+            }
+        } else {
+            if (obj.nodeType) {
+                eventer.off(obj,event,callback)
+            } else {
+                Plugin.prototype.unlistenTo.call(this,obj,event,callback)
+            }
+        }
     },
 
     /**
@@ -22829,6 +23058,11 @@ define('skylark-widgets-base/Widget',[
       return this;
     },
 
+    removeAttr : function(name) {
+      this._velm.removeAttr(name);
+      return this;
+    },
+
 
     /**
      * Calculate the location of the container to make it centered.
@@ -22890,12 +23124,12 @@ define('skylark-widgets-base/Widget',[
       var oldParent = this._parent;
       this._parent = parent;
       if (parent) {
-        this.attach(parent._elm || parent.element);
+        this.mount(parent._elm || parent.element);
         if (parent._setupChild) {
           parent._setupChild(this);
         }
       } else if (oldParent) {
-        this.detach();
+        this.unmount();
       }
       return this;
     },
@@ -22952,12 +23186,12 @@ define('skylark-widgets-base/Widget',[
 
 
     /**
-     *  Attach the current widget element to dom document.
+     *  mount the current widget element to dom document.
      *
-     * @method attachTo
+     * @method mount
      * @return {Widget} This Widget.
      */
-    attach : function(target,position){
+    mount : function(target,position){
         var toElm = target.element || target,
             elm = this._elm;
         if (!position || position=="child") {
@@ -22973,12 +23207,12 @@ define('skylark-widgets-base/Widget',[
     },
 
     /**
-     *  Detach the current widget element from dom document.
+     *  unmount the current widget element from dom document.
      *
      * @method html
      * @return {HtmlElement} HTML element representing the widget.
      */
-    detach : function() {
+    unmount : function() {
       this._velm.remove();
     },
 
@@ -23132,8 +23366,8 @@ define('skylark-widgets-base/Widget',[
   Widget.prototype.updateInterface = Widget.prototype.update;
   Widget.prototype.updatePosition = Widget.prototype.updateLocation;
   Widget.prototype.attachTo = Widget.prototype.setParent;
-
-  Widget.prototype._attachTo = Widget.prototype.attach;
+  Widget.prototype._attachTo = Widget.prototype.mount;
+  Widget.prototype.detach = Widget.prototype.unmount;
 
   /**
    * Top-left locationing.
@@ -23411,8 +23645,12 @@ define('skylark-videojs/utils/string-cases',[],function () {
         titleCaseEquals: titleCaseEquals
     };
 });
-define('skylark-videojs/utils/merge-options',['./obj'], function (obj) {
+define('skylark-videojs/utils/merge-options',[
+    "skylark-langx",
+    './obj'
+], function (langx,obj) {
     'use strict';
+    /*
     function mergeOptions(...sources) {
         const result = {};
         sources.forEach(source => {
@@ -23433,6 +23671,12 @@ define('skylark-videojs/utils/merge-options',['./obj'], function (obj) {
         return result;
     }
     return mergeOptions;
+    */
+    return function(...sources) {
+        var result = {};
+        langx.mixin(result,...sources,true);
+        return result;
+    }
 });
 define('skylark-videojs/utils/map',[], function () {
     'use strict';
@@ -23517,195 +23761,47 @@ define('skylark-videojs/component',[
         }
     }
 
-    const NativeEvents = {
-            "drag": 2, // DragEvent
-            "dragend": 2, // DragEvent
-            "dragenter": 2, // DragEvent
-            "dragexit": 2, // DragEvent
-            "dragleave": 2, // DragEvent
-            "dragover": 2, // DragEvent
-            "dragstart": 2, // DragEvent
-            "drop": 2, // DragEvent
-
-            "abort": 3, // Event
-            "change": 3, // Event
-            "error": 3, // Event
-            "selectionchange": 3, // Event
-            "submit": 3, // Event
-            "reset": 3, // Event
-            'fullscreenchange':3,
-            'fullscreenerror':3,
-
-/*
-            'disablepictureinpicturechanged':3,
-            'ended':3,
-            'enterpictureinpicture':3,
-            'durationchange':3,
-            'leavepictureinpicture':3,
-            'loadstart' : 3,
-            'loadedmetadata':3,
-            'pause' : 3,
-            'play':3,
-            'posterchange':3,
-            'ratechange':3,
-            'seeking' : 3,
-            'sourceset':3,
-            'suspend':3,
-            'textdata':3,
-            'texttrackchange':3,
-            'timeupdate':3,
-            'volumechange':3,
-            'waiting' : 3,
-*/
-
-
-            "focus": 4, // FocusEvent
-            "blur": 4, // FocusEvent
-            "focusin": 4, // FocusEvent
-            "focusout": 4, // FocusEvent
-
-            "keydown": 5, // KeyboardEvent
-            "keypress": 5, // KeyboardEvent
-            "keyup": 5, // KeyboardEvent
-
-            "message": 6, // MessageEvent
-
-            "click": 7, // MouseEvent
-            "contextmenu": 7, // MouseEvent
-            "dblclick": 7, // MouseEvent
-            "mousedown": 7, // MouseEvent
-            "mouseup": 7, // MouseEvent
-            "mousemove": 7, // MouseEvent
-            "mouseover": 7, // MouseEvent
-            "mouseout": 7, // MouseEvent
-            "mouseenter": 7, // MouseEvent
-            "mouseleave": 7, // MouseEvent
-
-
-            "progress" : 11, //ProgressEvent
-
-            "textInput": 12, // TextEvent
-
-            "tap": 13,
-            "touchstart": 13, // TouchEvent
-            "touchmove": 13, // TouchEvent
-            "touchend": 13, // TouchEvent
-
-            "load": 14, // UIEvent
-            "resize": 14, // UIEvent
-            "select": 14, // UIEvent
-            "scroll": 14, // UIEvent
-            "unload": 14, // UIEvent,
-
-            "wheel": 15, // WheelEvent
-
-    };
 
     class Component extends Widget {
-        isNativeEvent(events) {
-            if (langx.isString(events)) {
-                return !!NativeEvents[events];
-            } else if (langx.isArray(events)) {
-                for (var i=0; i<events.length; i++) {
-                    if (NativeEvents[events[i]]) {
-                        return true;
-                    }
-                }
-                return false;
-            }            
-
-        }   
-
-        on(events, selector, data, callback, ctx, /*used internally*/ one) {
-            if (this.el_ && this.isNativeEvent(events)) {
-                eventer.on(this.el_,events,selector,data,callback,ctx,one);
-            } else {
-                super.on(events, selector, data, callback, ctx,  one);
-            }
-        }   
-
-        off(events, callback) {
-            if (this.el_ && this.isNativeEvent(events)) {
-                eventer.off(this.el_,events,callback);
-            } else {
-                super.off(events,callback);
-            }
-        }
-
-        listenTo (obj, event, callback, /*used internally*/ one) {
-            if (langx.isString(obj) || langx.isArray(obj)) {
-                one = callback;
-                callback = event;
-                event = obj;
-                if (this.el_ && this.isNativeEvent(event)) {
-                    eventer.on(this.el_,event,callback,this,one);
-                } else {
-                    this.on(event,callback,this,one);
-                }
-            } else {
-                if (obj.nodeType) {
-                    eventer.on(obj,event,callback,this,one)
-                } else {
-                    super.listenTo(obj,event,callback,one)
-                }                
-            }
-        }
-
-        unlistenTo(obj, event, callback) {
-            if (langx.isString(obj) || langx.isArray(obj)) {
-                callback = event;
-                event = obj;
-                if (this.el_ && this.isNativeEvent(event)) {
-                    eventer.off(this.el_,event,callback);
-                } else {
-                    this.off(event,callback);                   
-                }
-            } else {
-                if (obj.nodeType) {
-                    eventer.off(obj,event,callback)
-                } else {
-                    super.unlistenTo(obj,event,callback)
-                }
-            }
-        }
-
-        _create() {
-
-        }
-
-
         _construct(player, options, ready) {
-            /*
-            var el;
-            if (options.el) {
-               el = options.el;
-            } else if (options.createEl !== false) {
-                el = this.createEl();
-            }
-            super(el);
-            */
-
             if (!player && this.play) {
                 this.player_ = player = this;
             } else {
                 this.player_ = player;
             }
+            this.options_ = mergeOptions({}, this.options_);
+            this.options_ = mergeOptions(this.options_, options);
+            this.ready_ = ready;
+
+            super._construct(this.options_,ready);
+
+        }
+
+        _create() {
+            var options = this.options_ = this.options;
+
+            if (options.el) {
+               this.el_ = options.el;
+            } else if (options.createEl !== false) {
+                this.el_ = this.createEl();
+            }
+
+            return this.elmx(this.el_)
+        }
+
+        _init() {
+            var options = this.options_,
+                player = this.player_;
+
             this.isDisposed_ = false;
             this.parentComponent_ = null;
-            this.options_ = mergeOptions({}, this.options_);
-            options = this.options_ = mergeOptions(this.options_, options);
             this.id_ = options.id || options.el && options.el.id;
             if (!this.id_) {
                 const id = player && player.id && player.id() || 'no_player';
                 this.id_ = `${ id }_component_${ Guid.newGUID() }`;
             }
             this.name_ = options.name || null;
-            if (options.el) {
-               this.el_ = options.el;
-            } else if (options.createEl !== false) {
-                this.el_ = this.createEl();
-            }
-            //this.el_ = this._elm;
+
 
             if (options.evented !== false) {
                 ///evented(this, { eventBusKey: this.el_ ? 'el_' : null });
@@ -23715,7 +23811,7 @@ define('skylark-videojs/component',[
             }
 
 
-            stateful(this, this.constructor.defaultState);
+            ///stateful(this, this.constructor.defaultState);
             this.children_ = [];
             this.childIndex_ = {};
             this.childNameIndex_ = {};
@@ -23727,11 +23823,13 @@ define('skylark-videojs/component',[
             if (options.initChildren !== false) {
                 this.initChildren();
             }
-            this.ready(ready);
+            this.ready(this.ready_);
             if (options.reportTouchActivity !== false) {
                 this.enableTouchActivity();
             }
+
         }
+
         dispose() {
             if (this.isDisposed_) {
                 return;
@@ -24008,6 +24106,7 @@ define('skylark-videojs/component',[
         $$(selector, context) {
             return Dom.$$(selector, context || this.contentEl());
         }
+/*
         hasClass(classToCheck) {
             return Dom.hasClass(this.el_, classToCheck);
         }
@@ -24026,12 +24125,14 @@ define('skylark-videojs/component',[
         hide() {
             this.addClass('vjs-hidden');
         }
+*/  
         lockShowing() {
             this.addClass('vjs-lock-showing');
         }
         unlockShowing() {
             this.removeClass('vjs-lock-showing');
         }
+/*
         getAttribute(attribute) {
             return Dom.getAttribute(this.el_, attribute);
         }
@@ -24041,6 +24142,7 @@ define('skylark-videojs/component',[
         removeAttribute(attribute) {
             Dom.removeAttribute(this.el_, attribute);
         }
+*/
         width(num, skipListeners) {
             return this.dimension('width', num, skipListeners);
         }
@@ -24103,12 +24205,14 @@ define('skylark-videojs/component',[
         currentHeight() {
             return this.currentDimension('height');
         }
+/*
         focus() {
             this.el_.focus();
         }
         blur() {
             this.el_.blur();
         }
+*/
         handleKeyDown(event) {
             if (this.player_) {
                 event.stopPropagation();
@@ -24331,6 +24435,12 @@ define('skylark-videojs/component',[
             return Component.components_[name];
         }
     }
+
+    Component.prototype.getAttribute = Component.prototype.getAttr;
+    Component.prototype.setAttribute = Component.prototype.getAttr;
+    Component.prototype.removeAttribute = Component.prototype.removeAttr;
+
+
     Component.prototype.supportsRaf_ = typeof window.requestAnimationFrame === 'function' && typeof window.cancelAnimationFrame === 'function';
     Component.registerComponent('Component', Component);
     return Component;
@@ -24961,7 +25071,1026 @@ define('skylark-videojs/tracks/text-track-list-converter',[],function () {
         trackToJson_
     };
 });
-define('skylark-videojs/utils/keycode',[],function(){
+define('skylark-devices-keyboard/keyboard',[
+	"skylark-langx-ns"
+],function(skylark){
+	var keyboard = {};
+	/**
+	 * Function: isShiftDown
+	 * 
+	 * Returns true if the shift key is pressed for the given event.
+	 */
+	keyboard.isShiftDown = function (evt) {
+		return (evt != null) ? evt.shiftKey : false;
+	};
+
+	/**
+	 * Function: isAltDown
+	 * 
+	 * Returns true if the alt key is pressed for the given event.
+	 */
+	keyboard.isAltDown = function (evt) {
+		return (evt != null) ? evt.altKey : false;
+	};
+
+	/**
+	 * Function: isControlDown
+	 * 
+	 * Returns true if the control key is pressed for the given event.
+	 */
+	keyboard.isControlDown = function (evt) {
+		return (evt != null) ? evt.ctrlKey : false;
+	};
+
+	/**
+	 * Function: isMetaDown
+	 * 
+	 * Returns true if the meta key is pressed for the given event.
+	 */
+	keyboard.isMetaDown = function (evt){
+		return (evt != null) ? evt.metaKey : false;
+	};
+
+	/**
+	 * TAB key
+	 * @attribute TAB
+	 * @type {Number}
+	 */
+	keyboard.TAB = 9;
+
+	/**
+	 * ENTER key
+	 * @attribute ENTER
+	 * @type {Number}
+	 */
+	keyboard.ENTER = 13;
+
+	/**
+	 * SHIFT key
+	 * @attribute SHIFT
+	 * @type {Number}
+	 */
+	keyboard.SHIFT = 16;
+
+	/**
+	 * CTRL key
+	 * @attribute CTRL
+	 * @type {Number}
+	 */
+	keyboard.CTRL = 17;
+
+	/**
+	 * ALT key
+	 * @attribute ALT
+	 * @type {Number}
+	 */
+	keyboard.ALT = 18;
+
+	/**
+	 * CAPS_LOCK key
+	 * @attribute CAPS_LOCK
+	 * @type {Number}
+	 */
+	keyboard.CAPS_LOCK = 20;
+
+	/**
+	 * ESC key
+	 * @attribute ESC
+	 * @type {Number}
+	 */
+	keyboard.ESC = 27;
+
+	/**
+	 * SPACEBAR key
+	 * @attribute SPACEBAR
+	 * @type {Number}
+	 */
+	keyboard.SPACEBAR = 32;
+
+	/**
+	 * PAGE_UP key
+	 * @attribute PAGE_UP
+	 * @type {Number}
+	 */
+	keyboard.PAGE_UP = 33;
+
+	/**
+	 * PAGE_DOWN key
+	 * @attribute PAGE_DOWN
+	 * @type {Number}
+	 */
+	keyboard.PAGE_DOWN = 34;
+
+	/**
+	 * END key
+	 * @attribute END
+	 * @type {Number}
+	 */
+	keyboard.END = 35;
+
+	/**
+	 * HOME key
+	 * @attribute HOME
+	 * @type {Number}
+	 */
+	keyboard.HOME = 36;
+
+	/**
+	 * INSERT key
+	 * @attribute INSERT
+	 * @type {Number}
+	 */
+	keyboard.INSERT = 45;
+
+	/**
+	 * DEL key
+	 * @attribute DEL
+	 * @type {Number}
+	 */
+	keyboard.DEL = 46;
+
+	/**
+	 * LEFT key
+	 * @attribute LEFT
+	 * @type {Number}
+	 */
+	keyboard.LEFT = 37;
+
+	/**
+	 * RIGHT key
+	 * @attribute RIGHT
+	 * @type {Number}
+	 */
+	keyboard.RIGHT = 39;
+
+	/**
+	 * UP key
+	 * @attribute UP
+	 * @type {Number}
+	 */
+	keyboard.UP = 38;
+
+	/**
+	 * DOWN key
+	 * @attribute DOWN
+	 * @type {Number}
+	 */
+	keyboard.DOWN = 40;
+
+	/**
+	 * NUM0 key
+	 * @attribute NUM0
+	 * @type {Number}
+	 */
+	keyboard.NUM0 = 48;
+
+	/**
+	 * NUM1 key
+	 * @attribute NUM1
+	 * @type {Number}
+	 */
+	keyboard.NUM1 = 49;
+
+	/**
+	 * NUM2 key
+	 * @attribute NUM2
+	 * @type {Number}
+	 */
+	keyboard.NUM2 = 50;
+
+	/**
+	 * NUM3 key
+	 * @attribute NUM3
+	 * @type {Number}
+	 */
+	keyboard.NUM3 = 51;
+
+	/**
+	 * NUM4 key
+	 * @attribute NUM4
+	 * @type {Number}
+	 */
+	keyboard.NUM4 = 52;
+
+	/**
+	 * NUM5 key
+	 * @attribute NUM5
+	 * @type {Number}
+	 */
+	keyboard.NUM5 = 53;
+
+	/**
+	 * NUM6 key
+	 * @attribute NUM6
+	 * @type {Number}
+	 */
+	keyboard.NUM6 = 54;
+
+	/**
+	 * NUM7 key
+	 * @attribute NUM7
+	 * @type {Number}
+	 */
+	keyboard.NUM7 = 55;
+
+	/**
+	 * NUM8 key
+	 * @attribute NUM8
+	 * @type {Number}
+	 */
+	keyboard.NUM8 = 56;
+
+	/**
+	 * NUM9 key
+	 * @attribute NUM9
+	 * @type {Number}
+	 */
+	keyboard.NUM9 = 57;
+
+	/**
+	 * A key
+	 * @attribute A
+	 * @type {Number}
+	 */
+	keyboard.A = 65;
+
+	/**
+	 * B key
+	 * @attribute B
+	 * @type {Number}
+	 */
+	keyboard.B = 66;
+
+	/**
+	 * C key
+	 * @attribute C
+	 * @type {Number}
+	 */
+	keyboard.C = 67;
+
+	/**
+	 * D key
+	 * @attribute D
+	 * @type {Number}
+	 */
+	keyboard.D = 68;
+
+	/**
+	 * E key
+	 * @attribute E
+	 * @type {Number}
+	 */
+	keyboard.E = 69;
+
+	/**
+	 * F key
+	 * @attribute F
+	 * @type {Number}
+	 */
+	keyboard.F = 70;
+
+	/**
+	 * G key
+	 * @attribute G
+	 * @type {Number}
+	 */
+	keyboard.G = 71;
+
+	/**
+	 * H key
+	 * @attribute H
+	 * @type {Number}
+	 */
+	keyboard.H = 72;
+
+	/**
+	 * I key
+	 * @attribute I
+	 * @type {Number}
+	 */
+	keyboard.I = 73;
+
+	/**
+	 * J key
+	 * @attribute J
+	 * @type {Number}
+	 */
+	keyboard.J = 74;
+
+	/**
+	 * K key
+	 * @attribute K
+	 * @type {Number}
+	 */
+	keyboard.K = 75;
+
+	/**
+	 * L key
+	 * @attribute L
+	 * @type {Number}
+	 */
+	keyboard.L = 76;
+
+	/**
+	 * M key
+	 * @attribute M
+	 * @type {Number}
+	 */
+	keyboard.M = 77;
+
+	/**
+	 * N key
+	 * @attribute N
+	 * @type {Number}
+	 */
+	keyboard.N = 78;
+
+	/**
+	 * O key
+	 * @attribute O
+	 * @type {Number}
+	 */
+	keyboard.O = 79;
+
+	/**
+	 * P key
+	 * @attribute P
+	 * @type {Number}
+	 */
+	keyboard.P = 80;
+
+	/**
+	 * Q key
+	 * @attribute Q
+	 * @type {Number}
+	 */
+	keyboard.Q = 81;
+
+	/**
+	 * R key
+	 * @attribute R
+	 * @type {Number}
+	 */
+	keyboard.R = 82;
+
+	/**
+	 * S key
+	 * @attribute S
+	 * @type {Number}
+	 */
+	keyboard.S = 83;
+
+	/**
+	 * T key
+	 * @attribute T
+	 * @type {Number}
+	 */
+	keyboard.T = 84;
+
+	/**
+	 * U key
+	 * @attribute U
+	 * @type {Number}
+	 */
+	keyboard.U = 85;
+
+	/**
+	 * V key
+	 * @attribute V
+	 * @type {Number}
+	 */
+	keyboard.V = 86;
+
+	/**
+	 * W key
+	 * @attribute W
+	 * @type {Number}
+	 */
+	keyboard.W = 87;
+
+	/**
+	 * X key
+	 * @attribute X
+	 * @type {Number}
+	 */
+	keyboard.X = 88;
+
+	/**
+	 * Y key
+	 * @attribute Y
+	 * @type {Number}
+	 */
+	keyboard.Y = 89;
+
+	/**
+	 * Z key
+	 * @attribute Z
+	 * @type {Number}
+	 */
+	keyboard.Z = 90;
+
+	/**
+	 * F1 key
+	 * @attribute F1
+	 * @type {Number}
+	 */
+	keyboard.F1 = 112;
+
+	/**
+	 * F2 key
+	 * @attribute F2
+	 * @type {Number}
+	 */
+	keyboard.F2 = 113;
+
+	/**
+	 * F3 key
+	 * @attribute F3
+	 * @type {Number}
+	 */
+	keyboard.F3 = 114;
+
+	/**
+	 * F4 key
+	 * @attribute F4
+	 * @type {Number}
+	 */
+	keyboard.F4 = 115;
+
+	/**
+	 * F5 key
+	 * @attribute F5
+	 * @type {Number}
+	 */
+	keyboard.F5 = 116;
+
+	/**
+	 * F6 key
+	 * @attribute F6
+	 * @type {Number}
+	 */
+	keyboard.F6 = 117;
+
+	/**
+	 * F7 key
+	 * @attribute F7
+	 * @type {Number}
+	 */
+	keyboard.F7 = 118;
+
+	/**
+	 * F8 key
+	 * @attribute F8
+	 * @type {Number}
+	 */
+	keyboard.F8 = 119;
+
+	/**
+	 * F9 key
+	 * @attribute F9
+	 * @type {Number}
+	 */
+	keyboard.F9 = 120;
+
+	/**
+	 * F10 key
+	 * @attribute F10
+	 * @type {Number}
+	 */
+	keyboard.F10 = 121;
+
+	/**
+	 * F11 key
+	 * @attribute F11
+	 * @type {Number}
+	 */
+	keyboard.F11 = 122;
+
+	/**
+	 * F12 key
+	 * @attribute F12
+	 * @type {Number}
+	 */
+	keyboard.F12 = 123;
+
+	return skylark.attach("devices.keyboard",keyboard);	
+});
+define('skylark-devices-keyboard/Key',[
+	"skylark-langx-klass",
+	"./keyboard"
+],function(klass,keyboard){
+	"use strict";
+
+	/**
+	 * Key is used by Keyboard, Mouse, etc, to represent a key state.
+	 *
+	 * @class Key
+	 * @module Input
+	*/
+	var Key = klass({
+		_construct : function() {
+			/**
+			 * Indicates if this key is currently pressed.
+			 * @property pressed
+			 * @default false
+			 * @type {boolean}
+			 */
+			this.pressed = false;
+
+			/**
+			 * Indicates if this key was just pressed.
+			 * @property justPressed
+			 * @default false
+			 * @type {boolean}
+			 */
+			this.justPressed = false;
+			
+			/**
+			 * Indicates if this key was just released.
+			 * @property justReleased
+			 * @default false
+			 * @type {boolean}
+			 */
+			this.justReleased = false;
+
+		},
+
+		/**
+		 * Update Key status based on new key state.
+		 * 
+		 * @method update
+		 */
+		update : function(action)  {
+			this.justPressed = false;
+			this.justReleased = false;
+
+			if(action === Key.DOWN)
+			{
+				if(this.pressed === false)
+				{
+					this.justPressed = true;
+				}
+				this.pressed = true;
+			}
+			else if(action === Key.UP)
+			{
+				if(this.pressed)
+				{
+					this.justReleased = true;
+				}
+				this.pressed = false;
+			}
+			else if(action === Key.RESET)
+			{
+				this.justReleased = false;
+				this.justPressed = false;
+			}
+		},
+
+		/**
+		 * Set this key attributes manually.
+		 * 
+		 * @method set
+		 */
+		set : function(justPressed, pressed, justReleased){
+			this.justPressed = justPressed;
+			this.pressed = pressed;
+			this.justReleased = justReleased;
+		},
+
+		/**
+		 * Reset key to default values.
+		 * 
+		 * @method reset
+		*/
+		reset : function() 	{
+			this.justPressed = false;
+			this.pressed = false;
+			this.justReleased = false;
+		}
+	});
+
+	/**
+	 * Down
+	 * @attribute DOWN
+	 * @type {Number}
+	 */
+	Key.DOWN = -1;
+
+	/**
+	 * Up
+	 * @attribute UP
+	 * @type {Number}
+	 */
+	Key.UP = 1;
+
+	/**
+	 * Reset
+	 * @attribute RESET
+	 * @type {Number}
+	 */
+	Key.RESET = 0;
+
+
+	return keyboard.Key = Key;
+
+});
+define('skylark-devices-keyboard/Monitor',[
+	"skylark-langx-klass",
+	"./keyboard",
+	"./Key"
+],function(
+	klass,
+	keyboard,
+	Key
+){
+	"use strict";
+
+	/**
+	 * Keyboard instance for input in sync with the running 3D application.
+	 * 
+	 * The keyboard object provided by scripts is automatically updated by the runtime handler.
+	 * 
+	 * @class Keyboard
+	 * @module Input
+	 * @param {Boolean} dontInitialize If true the mouse events are not created.
+	 */
+	var Monitor = klass({
+		_construct : function (dontInitialize) 	{
+			/**
+			 * Array with keyboard keys status.
+			 *
+			 * @property keys
+			 * @type {Array}
+			 */
+			this.keys = [];
+
+
+			/**
+			 * The actions array serves as a buffer for the key input actions.
+			 *
+			 * Until the update method is called it stores all the key stroke actions.
+			 *
+			 * On update the key strokes are updated and the keys array stores the correct values.
+			 *
+			 * @property actions
+			 * @type {Array}
+			 */
+			this.actions = [];
+
+			var self = this;
+			var actions = this.actions;
+
+			/**
+			 * Event manager used to handle the keyup, keydown and focus events.
+			 *
+			 * On each event actions are added to the actions array.
+			 *
+			 * @property events
+			 * @type {EventManager}
+			 */
+			//this.events = new EventManager();
+			/*
+			this.events.add(window, "keydown", function(event)
+			{
+				actions.push(event.keyCode);
+				actions.push(Key.DOWN);
+			});
+			this.events.add(window, "keyup", function(event)
+			{
+				actions.push(event.keyCode);
+				actions.push(Key.UP);
+			});
+			this.events.add(window, "focus", function(event)
+			{
+				self.reset();
+			});
+			*/
+			this.handlers = {
+				"keydown" : function(event) {
+								actions.push(event.keyCode);
+								actions.push(Key.DOWN);
+							},			
+				"keyup" : function(event) {
+								actions.push(event.keyCode);
+								actions.push(Key.UP);
+							},			
+				"focus" : function(event) {
+								self.reset();
+							},			
+
+
+			};
+
+			if(dontInitialize !== true)
+			{
+				this.create();
+			}
+
+
+		},
+
+		/**
+		 * Update key flags synchronously.
+		 * 
+		 * @method update
+		 */
+		update : function() 	{
+			var end = 0;
+
+			while(this.actions.length > end)
+			{
+				var key = this.actions.shift();
+				var action = this.actions.shift();
+
+				if(this.keys[key] === undefined)
+				{
+					this.keys[key] = new Key();
+				}
+
+				this.keys[key].update(action);
+
+				if(this.keys[key].justReleased || this.keys[key].justPressed)
+				{
+					this.actions.push(key);
+					this.actions.push(Key.RESET);
+					end += 2;
+				}
+			}
+		},
+
+		/**
+		 * Reset keyboard status to default.
+		 *
+		 * Does not clean the action list.
+		 * 
+		 * @method reset
+		 */
+		reset : function() {
+			//Reset all keys
+			for(var i = 0; i < this.keys.length; i++)
+			{
+				if(this.keys[i] !== undefined)
+				{
+					this.keys[i].reset();
+				}
+			}
+		},
+
+		/**
+		 * Check if a key is pressed.
+		 * 
+		 * @method keyPressed
+		 * @return {boolean} True is the key is currently pressed
+		 */
+		keyPressed : function(key){
+			return this.keys[key] !== undefined && this.keys[key].pressed;
+		},
+
+		/**
+		 * Check is a key as just pressed.
+		 * 
+		 * @method keyJustPressed
+		 * @return {boolean} True is the key was just pressed
+		 */
+		keyJustPressed : function(key){
+			return this.keys[key] !== undefined && this.keys[key].justPressed;
+		},
+
+		/**
+		 * Check if a key was just released.
+		 * 
+		 * @method keyJustReleased
+		 * @return {boolean} True is the key was just pressed
+		 */
+		keyJustReleased : function(key){
+			return this.keys[key] !== undefined && this.keys[key].justReleased;
+		},
+
+
+		/**
+		 * Create keyboard events.
+		 * 
+		 * @method dispose
+		 */
+		create : function(){
+			//this.events.create();
+			for (var event in this.handlers) {
+				window.addEventListener(event,this.handlers[event]);
+			}
+		},
+
+		/**
+		 * Dispose keyboard events.
+		 * 
+		 * @method dispose
+		 */
+		dispose : function()	{
+			//this.events.destroy();
+			for (var event in this.handlers) {
+				window.removeEventListener(event,this.handlers[event]);
+			}
+		}
+
+	});
+
+
+	return keyboard.Monitor =  Monitor;
+});
+define('skylark-devices-keyboard/codes',[
+	"./keyboard"
+],function(keyboard){
+
+  /**
+   * Get by name
+   *
+   *   exports.code['enter'] // => 13
+   */
+
+  var codes =  {
+    'backspace': 8,
+    'tab': 9,
+    'enter': 13,
+    'shift': 16,
+    'ctrl': 17,
+    'alt': 18,
+    'pause/break': 19,
+    'caps lock': 20,
+    'esc': 27,
+    'space': 32,
+    'page up': 33,
+    'page down': 34,
+    'end': 35,
+    'home': 36,
+    'left': 37,
+    'up': 38,
+    'right': 39,
+    'down': 40,
+    'insert': 45,
+    'delete': 46,
+    'command': 91,
+    'left command': 91,
+    'right command': 93,
+    'numpad *': 106,
+    'numpad +': 107,
+    'numpad -': 109,
+    'numpad .': 110,
+    'numpad /': 111,
+    'num lock': 144,
+    'scroll lock': 145,
+    'my computer': 182,
+    'my calculator': 183,
+    ';': 186,
+    '=': 187,
+    ',': 188,
+    '-': 189,
+    '.': 190,
+    '/': 191,
+    '`': 192,
+    '[': 219,
+    '\\': 220,
+    ']': 221,
+    "'": 222
+  };
+
+  /*!
+   * Programatically add the following
+   */
+
+  // lower case chars a-z
+  for (var i = 97; i < 123; i++) {
+    codes[String.fromCharCode(i)] = i - 32;
+  }
+
+  // numbers 0-9
+  for (var i = 48; i < 58; i++) {
+    codes[i - 48] = i;
+  }
+
+  // function keys f1-f12
+  for (var i = 1; i < 13; i++) {
+    codes['f'+i] = i + 111;
+  }
+
+  // numpad keys
+  for (var i = 0; i < 10; i++) {
+    codes['numpad '+i] = i + 96;
+  }
+
+  // Helper aliases
+
+
+
+
+  return keyboard.codes = codes;
+});
+define('skylark-devices-keyboard/names',[
+	"./keyboard",
+	"./codes"
+],function(keyboard,codes){
+
+  /**
+   * Get by code
+   *
+   *   exports.name[13] // => 'Enter'
+   */
+
+  var names = {} ;
+
+  // Create reverse mapping
+  for (var i in codes) {
+  	names[codes[i]] = i;
+  }
+
+  return keyboard.names = names;
+});
+define('skylark-devices-keyboard/aliases',[
+	"./keyboard",
+	"./codes",
+    "./names"
+],function(keyboard,codes){
+
+  var aliases =  {
+    'windows': 91,
+    '⇧': 16,
+    '⌥': 18,
+    '⌃': 17,
+    '⌘': 91,
+    'ctl': 17,
+    'control': 17,
+    'option': 18,
+    'pause': 19,
+    'break': 19,
+    'caps': 20,
+    'return': 13,
+    'escape': 27,
+    'spc': 32,
+    'spacebar': 32,
+    'pgup': 33,
+    'pgdn': 34,
+    'ins': 45,
+    'del': 46,
+    'cmd': 91
+  }
+
+  return keyboard.aliases = aliases;
+});
+define('skylark-devices-keyboard/isEventKey',[
+	"skylark-langx-types",
+	"./keyboard",
+	"./aliases",
+	"./codes",
+	"./names"
+],function(types,keyboard,alias,codes,names){
+
+  /**
+   * Compares a keyboard event with a given keyCode or keyName.
+   *
+   * @param {Event} event Keyboard event that should be tested
+   * @param {Mixed} keyCode {Number} or keyName {String}
+   * @return {Boolean}
+   * @api public
+   */
+   function isEventKey(event, nameOrCode) {
+      var keyCode = event.which || event.keyCode || event.charCode;
+      if (keyCode === null || keyCode === undefined) { 
+      	return false; 
+      }
+
+      if (types.isString(nameOrCode)) {
+        // check codes
+        var foundNamedKey = codes[nameOrCode.toLowerCase()]
+        if (foundNamedKey) { return foundNamedKey === keyCode; }
+      
+        // check aliases
+        var foundNamedKey = aliases[nameOrCode.toLowerCase()]
+        if (foundNamedKey) { return foundNamedKey === keyCode; }
+      } else if (types.isNumber(nameOrCode)) {
+        return nameOrCode === keyCode;
+      }
+      return false;
+  }
+
+  return keyboard.isEventKey = isEventKey;
+
+});
+
+define('skylark-devices-keyboard/main',[
+	"./keyboard",
+	"./Key",
+	"./Monitor",
+	"./aliases",
+	"./codes",
+	"./isEventKey",
+	"./names"
+],function(keyboard){
+	return keyboard;
+});
+define('skylark-devices-keyboard', ['skylark-devices-keyboard/main'], function (main) { return main; });
+
+define('skylark-videojs/utils/keycode',[
+  "skylark-devices-keyboard"
+],function(keyboard){
   // Source: http://jsfiddle.net/vWx8V/
   // http://stackoverflow.com/questions/5603195/full-list-of-javascript-keycodes
 
@@ -25138,7 +26267,14 @@ define('skylark-videojs/utils/keycode',[],function(){
     codes[alias] = aliases[alias]
   }
 
-  return exports;
+  //return exports;
+
+  return {
+    codes : keyboard.codes,
+    names : keyboard.names,
+    aliases : keyboard.aliases,
+    isEventKey : keyboard.isEventKey
+  }
 
 });
 define('skylark-videojs/modal-dialog',[
@@ -34392,11 +35528,11 @@ define('skylark-videojs/player',[
         huge: Infinity
     };
     class Player extends Component {
-        constructor(tag, options, ready) {
+        _construct(tag, options, ready) {
             tag.id = tag.id || options.id || `vjs_video_${ Guid.newGUID() }`;
             options = obj.assign(Player.getTagSettings(tag), options);
             options.initChildren = false;
-            options.createEl = false;
+            ///options.createEl = false;
             options.evented = false;
             options.reportTouchActivity = false;
             if (!options.language) {
@@ -34416,7 +35552,12 @@ define('skylark-videojs/player',[
                     }
                 }
             }
-            super(null, options, ready);
+
+            this.tag = tag;
+            this.tagAttributes = tag && Dom.getAttributes(tag);
+
+            super._construct(null, options, ready);
+
             this.boundDocumentFullscreenChange_ = e => this.documentFullscreenChange_(e);
             this.boundFullWindowOnEscKey_ = e => this.fullWindowOnEscKey(e);
             this.isFullscreen_ = false;
@@ -34431,8 +35572,6 @@ define('skylark-videojs/player',[
             if (!this.options_ || !this.options_.techOrder || !this.options_.techOrder.length) {
                 throw new Error('No techOrder specified. Did you overwrite ' + 'videojs.options instead of just changing the ' + 'properties you want to override?');
             }
-            this.tag = tag;
-            this.tagAttributes = tag && Dom.getAttributes(tag);
             this.language(this.options_.language);
             if (options.languages) {
                 const languagesToLower = {};
@@ -34464,7 +35603,7 @@ define('skylark-videojs/player',[
                 });
             }
             this.scrubbing_ = false;
-            this.el_ = this.createEl();
+            ///this.el_ = this.createEl();
             //evented(this, { eventBusKey: 'el_' });
             if (this.fsApi_.requestFullscreen) {
                 Events.on(document, this.fsApi_.fullscreenchange, this.boundDocumentFullscreenChange_);
@@ -34523,6 +35662,32 @@ define('skylark-videojs/player',[
             this.listenTo('languagechange', this.handleLanguagechange);
             this.breakpoints(this.options_.breakpoints);
             this.responsive(this.options_.responsive);
+
+            log.info("The player is created.");
+        }
+
+        _init() {
+            super._init();
+
+            this.children_.unshift(this.tag);
+
+            this.addClass('vjs-paused');
+
+            if (window.VIDEOJS_NO_DYNAMIC_STYLE !== true) {
+                this.styleEl_ = stylesheet.createStyleElement('vjs-styles-dimensions');
+                const defaultsStyleEl = Dom.$('.vjs-styles-defaults');
+                const head = Dom.$('head');
+                head.insertBefore(this.styleEl_, defaultsStyleEl ? defaultsStyleEl.nextSibling : head.firstChild);
+            }
+            this.fill_ = false;
+            this.fluid_ = false;
+            this.width(this.options_.width);
+            this.height(this.options_.height);
+            this.fill(this.options_.fill);
+            this.fluid(this.options_.fluid);
+            this.aspectRatio(this.options_.aspectRatio);
+            this.crossOrigin(this.options_.crossOrigin || this.options_.crossorigin);
+
         }
         dispose() {
             this.trigger('dispose');
@@ -34616,21 +35781,7 @@ define('skylark-videojs/player',[
             tag.id += '_html5_api';
             tag.className = 'vjs-tech';
             tag.player = el.player = this;
-            this.addClass('vjs-paused');
-            if (window.VIDEOJS_NO_DYNAMIC_STYLE !== true) {
-                this.styleEl_ = stylesheet.createStyleElement('vjs-styles-dimensions');
-                const defaultsStyleEl = Dom.$('.vjs-styles-defaults');
-                const head = Dom.$('head');
-                head.insertBefore(this.styleEl_, defaultsStyleEl ? defaultsStyleEl.nextSibling : head.firstChild);
-            }
-            this.fill_ = false;
-            this.fluid_ = false;
-            this.width(this.options_.width);
-            this.height(this.options_.height);
-            this.fill(this.options_.fill);
-            this.fluid(this.options_.fluid);
-            this.aspectRatio(this.options_.aspectRatio);
-            this.crossOrigin(this.options_.crossOrigin || this.options_.crossorigin);
+
             const links = tag.getElementsByTagName('a');
             for (let i = 0; i < links.length; i++) {
                 const linkEl = links.item(i);
@@ -34642,7 +35793,6 @@ define('skylark-videojs/player',[
                 tag.parentNode.insertBefore(el, tag);
             }
             Dom.prependTo(tag, el);
-            this.children_.unshift(tag);
             this.el_.setAttribute('lang', this.language_);
             this.el_ = el;
             return el;
@@ -35281,7 +36431,7 @@ define('skylark-videojs/player',[
                         this.tech_[method](arg);
                     }
                 } catch (e) {
-                    log(e);
+                    log.error(e);
                     throw e;
                 }
             }, true);
@@ -35299,15 +36449,15 @@ define('skylark-videojs/player',[
                 return this.tech_[method]();
             } catch (e) {
                 if (this.tech_[method] === undefined) {
-                    log(`Video.js: ${ method } method not defined for ${ this.techName_ } playback technology.`, e);
+                    log.warn(`Video.js: ${ method } method not defined for ${ this.techName_ } playback technology.`, e);
                     throw e;
                 }
                 if (e.name === 'TypeError') {
-                    log(`Video.js: ${ method } unavailable on ${ this.techName_ } playback technology element.`, e);
+                    log.warn(`Video.js: ${ method } unavailable on ${ this.techName_ } playback technology element.`, e);
                     this.tech_.isReady_ = false;
                     throw e;
                 }
-                log(e);
+                log.error(e);
                 throw e;
             }
         }
@@ -36396,6 +37546,7 @@ define('skylark-videojs/player',[
     Player.prototype.crossorigin = Player.prototype.crossOrigin;
     Player.players = {};
     const navigator = window.navigator;
+
     Player.prototype.options_ = {
         techOrder: Tech.defaultTechOrder_,
         html5: {},
